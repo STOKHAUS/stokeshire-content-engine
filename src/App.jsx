@@ -26,119 +26,43 @@ const MCP={
   asana:{type:"url",url:"https://mcp.asana.com/v2/mcp",name:"asana"},
 };
 
-// ═══ VOICE LIBRARY — extracted from top-performing Stokeshire content ═══
-const VOICE_LIBRARY = `
-## VOICE LIBRARY — Extracted from Stokeshire's highest-performing published content
+// ═══ SYSTEM PROMPT (condensed for API token efficiency) ═══
+const SYSTEM_PROMPT = `You are the Stokeshire Content Engine for wisconsindesignerdoodles.com — a therapy-grade luxury doodle breeding program in Medford, WI. DATCP #514401-DS. Owner: James Stokes.
 
-### Structural Patterns
-- Opens with confident, direct positioning that establishes what the subject IS
-- Immediately delivers the core definition/answer before going into details
-- Uses structured H2 hierarchy: Intro → Quick Facts → Deep Sections → Health → FAQ → CTA
-- Embeds genetics education naturally (RSPO2, merle gene, COI, generation labels)
-- Weight/size always presented as ranges with units ("10-30 pounds, 14-16 inches at the shoulder")
-- Coat descriptions bundle texture + shedding level + grooming needs in one paragraph
-- Health section lists breed-specific risks by parent breed origin
-- FAQ sections answer the exact Google "People Also Ask" questions
+VOICE: Professional restraint, veterinary literacy, calm authority. Education-first — teach, don't sell. Authority through specificity (exact weight ranges, gene names, generation labels). Hedge health claims: "may","typically","often". Include "At Stokeshire Designer Doodles, we..." naturally. Use "lower-shedding" + "no dog is truly hypoallergenic" — never promise hypoallergenic. Lifespan: 12-15 years. No exclamation points in body copy. No hype, urgency, or scarcity. No "perfect" or "guaranteed." Correct industry misinformation without naming competitors. Explain technical terms inline.
 
-### Sentence-Level Voice Examples (match this cadence and tone)
-- "If you're looking for a forever companion — not a trend — you're in the right place."
-- "Unfortunately, some programs attempt to 'shrink' dogs too quickly by stacking small lines or overusing a single breed contribution."
-- "Understanding this genetic makeup is critical for both breeders and future owners."
-- "While individual variation exists, they typically range from medium to large-sized dogs."
-- "Their striking appearance is accentuated by a luxuriously dense, wavy, and sometimes curly coat."
-- "Each pairing is thoughtfully selected for health, temperament, and low-to-non-shedding coats with premium DNA Science."
-- "Responsible breeders will take steps to minimize the risk of health issues by ensuring appropriate breeding and genetic testing."
+BREEDS: AMD, GMD, Bernedoodles (standard/mini/munchkin/micro), Aussiedoodles (toy/mini), Goldendoodles (incl. F2 flat coat). Unfurnished = RSPO2 negative, not hypoallergenic.
 
-### Voice Characteristics to Match
-- Authority through specificity: exact weight ranges, gene names, generation labels
-- Gentle correction of industry misinformation WITHOUT naming competitors
-- Education-first: teaches the reader, doesn't sell to them
-- Compliance-aware hedging: "may", "typically", "often", "can", "around"
-- Personal breeder perspective: "At Stokeshire, we..." and "Our Stokeshire Method includes..."
-- Transparent about health risks — builds trust through honesty
-- Technical terms explained inline with parenthetical definitions
-- Never uses urgency, scarcity, or hype tactics
-
-### Phrases That Must Appear Naturally
-- "At Stokeshire Designer Doodles, we..." (at least once per article)
-- "Our Stokeshire Method" or "Stokeshire Puppy Aptitude Test" where relevant
-- "no dog is truly hypoallergenic" or "no dog is 100% allergy-free" when discussing coats
-- "lower-shedding" instead of "hypoallergenic" as a standalone claim
-- "typically 12-15 years" for lifespan references
-- "state-licensed" and "DATCP #514401-DS" in authority-establishing contexts
-
-### Things the Voice NEVER Does
-- Exclamation points in body copy (only in rare UI/callout elements)
-- "Perfect", "guaranteed", "best dog ever" hyperbole
-- Price comparisons to specific competitors
-- Promises about therapy/service certification outcomes
-- Claims about health test results without "consult your veterinarian" qualifier
-- Stock photo language or generic pet blog filler sentences
-`;
-
-// ═══ SYSTEM PROMPT (with voice library) ═══
-const SYSTEM_PROMPT = `You are the Stokeshire Content Engine — an expert SEO content writer for Stokeshire Designer Doodles (wisconsindesignerdoodles.com), a therapy-grade luxury breeding program in Medford, Wisconsin. DATCP license #514401-DS. Owner: James Stokes.
-
-${VOICE_LIBRARY}
-
-## BREEDS RAISED
-Australian Mountain Doodles (AMD), Golden Mountain Doodles (GMD), Bernedoodles (standard, mini, munchkin, micro), Aussiedoodles (toy, mini), Goldendoodles (including F2 flat coat/unfurnished). Unfurnished = RSPO2 negative, not hypoallergenic.
-
-## ARTICLE STRUCTURE (MANDATORY)
-1. QUICK ANSWER (AEO) — 2-3 sentence direct answer extractable by AI search engines
-2. TABLE OF CONTENTS — anchor-linked sections
-3. BODY — H2 sections, short paragraphs (3-4 sentences), "Stokeshire Perspective" callout boxes, internal links as [INTERNAL LINK: /path]
-4. FAQ — 4-6 questions, answers 600-1200 chars, hedged/compliant
+STRUCTURE:
+1. QUICK ANSWER (AEO) — 2-3 sentence direct answer for AI search extraction
+2. TABLE OF CONTENTS
+3. BODY — H2 sections, 3-4 sentence paragraphs, "Stokeshire Perspective" callouts, [INTERNAL LINK: /path] markers
+4. FAQ — 4-6 Qs, 600-1200 char answers, hedged
 5. CONVERSION BLOCK — CTAs to /apply and /available-puppies
+Mark commerce opportunities: [COMMERCE OPPORTUNITY: desc]
 
-## 3-LAYER CONTENT MODEL
-Every article serves: (1) Authority/SEO, (2) Conversion/applications, (3) Commerce/future products [COMMERCE OPPORTUNITY: desc].
-
-## OUTPUT FORMAT
+OUTPUT FORMAT:
 ---META---
-Title: [55-60 chars, keyword-front]
-Description: [150-155 chars with CTA]
-Slug: [url slug]
-Primary Keyword: [main]
-Secondary Keywords: [comma list]
-Word Count Target: [number]
-Content Pillar: [Breed Authority / Comparison / Ownership-Lifestyle]
-
+Title: [55-60 chars] | Description: [150-155 chars] | Slug | Primary Keyword | Secondary Keywords | Word Count Target | Content Pillar
 ---ARTICLE---
-[Full markdown — minimum 2000 words, match voice library exactly]
-
+[Full markdown, minimum 2000 words]
 ---SCHEMA---
-[Complete JSON-LD: FAQPage + Article, author=James Stokes, publisher=Stokeshire Designer Doodles]
-
+[JSON-LD: FAQPage + Article, author=James Stokes, publisher=Stokeshire Designer Doodles]
 ---INTERNAL LINKS---
-[All opportunities with anchor text suggestions]
-
+[Opportunities with anchor text]
 ---NOTES FOR JAMES---
-[Compliance flags, judgment calls, strategic notes]`;
+[Compliance flags, strategic notes]`;
 
-// ═══ COMPLIANCE EDITOR PROMPT ═══
-const EDITOR_PROMPT = `You are the Stokeshire Compliance Editor. Your ONLY job is to review article drafts and flag problems. You are not rewriting — you are auditing.
+const EDITOR_PROMPT = `You are the Stokeshire Compliance Editor. Audit only — do not rewrite.
 
-Check for:
-1. COMPLIANCE: Any "hypoallergenic" used as a promise (must be "lower-shedding" + disclaimer). Any health guarantees. Any temperament guarantees.
-2. BRAND VOICE: Exclamation points in body copy. Hype language ("perfect","best","amazing"). Urgency/scarcity tactics.
-3. FACTUAL: Weight/size ranges that seem off. Lifespan claims outside 12-15 years. Generation labels used incorrectly.
-4. SEO: Missing Quick Answer section. Missing FAQ section. Missing conversion block. Fewer than 3 internal link opportunities.
-5. STRUCTURE: Missing meta title/description. Missing JSON-LD schema. Article under 1500 words.
+Check: (1) "Hypoallergenic" used as promise? Must be "lower-shedding" + disclaimer. (2) Health/temperament guarantees? (3) Exclamation points, hype, urgency? (4) Weight/size ranges accurate? Lifespan 12-15yr? (5) Quick Answer present? FAQ present? Conversion block? 3+ internal links? (6) Meta title/description? JSON-LD schema? Word count 1500+?
 
-Return your review as:
+Return:
 ---COMPLIANCE REVIEW---
-Score: [0-100]
-Status: [PASS / NEEDS REVISION / FAIL]
-
-Issues Found:
-[Numbered list of specific issues with line-level detail]
-
-Suggested Fixes:
-[For each issue, the specific fix]
-
-What's Working Well:
-[2-3 things the draft does right]`;
+Score: [0-100] | Status: [PASS/NEEDS REVISION/FAIL]
+Issues Found: [numbered list]
+Suggested Fixes: [per issue]
+What's Working: [2-3 positives]`;
 
 // ═══ UTILITIES ═══
 function csvParse(t,skip=0){const ls=t.split("\n").filter(l=>l.trim()).slice(skip);if(ls.length<2)return[];const hs=csvLine(ls[0]);return ls.slice(1).map(l=>{const vs=csvLine(l);const r={};hs.forEach((h,i)=>{r[h]=vs[i]||""});return r}).filter(r=>Object.values(r).some(v=>v))}
@@ -147,10 +71,17 @@ function csvLine(l){const r=[];let c="",q=false;for(let i=0;i<l.length;i++){cons
 function store(k,d){try{localStorage.setItem(k,JSON.stringify(d))}catch(e){console.error(e)}}
 function load(k,fb){try{const r=localStorage.getItem(k);return r?JSON.parse(r):fb}catch{return fb}}
 
-async function ai(msgs,opts={}){
+async function ai(msgs,opts={},retries=1){
   const body={model:"claude-sonnet-4-20250514",max_tokens:8000,messages:msgs,...(opts.system?{system:opts.system}:{}),...(opts.tools?{tools:opts.tools}:{})};
   const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`API ${r.status}`)}
+  if(!r.ok){
+    const e=await r.json().catch(()=>({}));
+    if(r.status===429&&retries>0){
+      await new Promise(ok=>setTimeout(ok,35000));
+      return ai(msgs,opts,retries-1);
+    }
+    throw new Error(e.error?.message||`API ${r.status}`);
+  }
   return r.json();
 }
 function aiText(d){return d.content.filter(b=>b.type==="text").map(b=>b.text).join("\n")}
@@ -228,6 +159,14 @@ export default function ContentEngine(){
     setPipeline(load("stk-pipeline",[]));
     setMemory(load("stk-memory",[]));
     setSettings(load("stk-settings",{perplexityKey:"",openaiKey:"",sqspKey:"",ahrefsKey:""}));
+    // Restore last draft if exists
+    const draft=load("stk-draft",null);
+    if(draft&&draft.article&&(Date.now()-draft.ts)<86400000){
+      setTopic(draft.topic||"");setKw(draft.kw||"");setPillar(draft.pillar||"Breed Authority");
+      setSlug(draft.slug||"");setBrief(draft.brief||"");setArticle(draft.article||"");
+      setReview(draft.review||"");if(draft.score)setSc(draft.score);
+      setStep(draft.review?3:2);setTab("studio");
+    }
   },[]);
 
   const fetchCSV=useCallback(async()=>{
@@ -296,6 +235,7 @@ export default function ContentEngine(){
     try{
       const d=await ai([{role:"user",content:`Write a complete SEO article for Stokeshire Designer Doodles.\n\nTOPIC: ${topic}\nKEYWORDS: ${kw}\nPILLAR: ${pillar}\nSLUG: ${slug}\n\n${brief?`COMPETITOR BRIEF:\n${brief}\n\nCover everything competitors do PLUS Stokeshire's unique perspective.`:""}\n${extra?`ADDITIONAL CONTEXT:\n${extra}`:""}\n${memContext}\n\nFollow output format exactly. ALL sections required. Minimum 2000 words. Match the voice library precisely.`}],{system:SYSTEM_PROMPT});
       const out=aiText(d);setArticle(out);setSc(score(out));setStep(2);
+      store("stk-draft",{topic,kw,pillar,slug,brief,article:out,review:"",score:score(out),ts:Date.now()});
     }catch(e){setErr(p=>({...p,draft:e.message}))}
     setLoading(null);
   },[topic,kw,pillar,slug,brief,extra,memory]);
@@ -306,6 +246,7 @@ export default function ContentEngine(){
     try{
       const d=await ai([{role:"user",content:`Review this article draft for compliance, brand voice, SEO structure, and factual accuracy:\n\n${article}`}],{system:EDITOR_PROMPT});
       setReview(aiText(d));setStep(3);
+      store("stk-draft",{topic,kw,pillar,slug,brief,article,review:aiText(d),score:sc,ts:Date.now()});
     }catch(e){setErr(p=>({...p,review:e.message}))}
     setLoading(null);
   },[article]);
@@ -345,7 +286,7 @@ export default function ContentEngine(){
   // Pipeline
   const addPipeline=useCallback(async()=>{
     const title=(article.match(/Title:\s*(.+)/)?.[1]||topic).trim();
-    const item={id:Date.now().toString(),title,keywords:kw.split(",")[0].trim(),pillar,slug,score:sc?.score||0,reviewStatus:review.includes("PASS")?"pass":"needs-review",status:"drafted",createdAt:new Date().toISOString()};
+    const item={id:Date.now().toString(),title,keywords:kw.split(",")[0].trim(),pillar,slug,score:sc?.score||0,reviewStatus:review.includes("PASS")?"pass":"needs-review",status:"drafted",createdAt:new Date().toISOString(),fullArticle:article};
     const up=[item,...pipeline];setPipeline(up);await store("stk-pipeline",up);
     // Add to memory bank
     if(sc?.score>=70){const mu=[{title,keywords:kw.split(",")[0].trim(),score:sc.score,pillar,date:new Date().toISOString()},...memory].slice(0,20);setMemory(mu);await store("stk-memory",mu)}
@@ -524,7 +465,7 @@ export default function ContentEngine(){
               <div style={{fontFamily:F.d,fontSize:22,color:C.ink,marginBottom:8}}>Article in Pipeline</div>
               <div style={{fontSize:13,color:C.slate,marginBottom:24}}>Article saved. Use the copy buttons above to grab meta, article, and schema for Squarespace.</div>
               <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
-                <Btn onClick={()=>{setStep(0);setArticle("");setBrief("");setReview("");setSc(null)}} v="primary">New Article</Btn>
+                <Btn onClick={()=>{setStep(0);setArticle("");setBrief("");setReview("");setSc(null);localStorage.removeItem("stk-draft")}} v="primary">New Article</Btn>
                 <Btn onClick={()=>setTab("pipeline")} v="secondary">View Pipeline</Btn>
               </div>
               <div style={{marginTop:16,fontSize:11,color:C.stone,padding:12,background:C.creamDark,borderRadius:8}}>
