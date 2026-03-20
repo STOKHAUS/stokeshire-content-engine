@@ -144,12 +144,12 @@ What's Working Well:
 function csvParse(t,skip=0){const ls=t.split("\n").filter(l=>l.trim()).slice(skip);if(ls.length<2)return[];const hs=csvLine(ls[0]);return ls.slice(1).map(l=>{const vs=csvLine(l);const r={};hs.forEach((h,i)=>{r[h]=vs[i]||""});return r}).filter(r=>Object.values(r).some(v=>v))}
 function csvLine(l){const r=[];let c="",q=false;for(let i=0;i<l.length;i++){const ch=l[i];if(ch==='"'){if(q&&l[i+1]==='"'){c+='"';i++}else q=!q}else if(ch===","&&!q){r.push(c.trim());c=""}else c+=ch}r.push(c.trim());return r}
 
-async function store(k,d){try{await window.storage.set(k,JSON.stringify(d))}catch(e){console.error(e)}}
-async function load(k,fb){try{const r=await window.storage.get(k);return r?JSON.parse(r.value):fb}catch{return fb}}
+function store(k,d){try{localStorage.setItem(k,JSON.stringify(d))}catch(e){console.error(e)}}
+function load(k,fb){try{const r=localStorage.getItem(k);return r?JSON.parse(r):fb}catch{return fb}}
 
 async function ai(msgs,opts={}){
-  const body={model:"claude-sonnet-4-20250514",max_tokens:8000,messages:msgs,...(opts.system?{system:opts.system}:{}),...(opts.tools?{tools:opts.tools}:{}),...(opts.mcp_servers?{mcp_servers:opts.mcp_servers}:{})};
-  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const body={model:"claude-sonnet-4-20250514",max_tokens:8000,messages:msgs,...(opts.system?{system:opts.system}:{}),...(opts.tools?{tools:opts.tools}:{})};
+  const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`API ${r.status}`)}
   return r.json();
 }
@@ -225,9 +225,9 @@ export default function ContentEngine(){
   const [settings,setSettings]=useState({perplexityKey:"",openaiKey:"",sqspKey:"",ahrefsKey:""});
 
   useEffect(()=>{
-    load("stk-pipeline",[]).then(setPipeline);
-    load("stk-memory",[]).then(setMemory);
-    load("stk-settings",{perplexityKey:"",openaiKey:"",sqspKey:"",ahrefsKey:""}).then(setSettings);
+    setPipeline(load("stk-pipeline",[]));
+    setMemory(load("stk-memory",[]));
+    setSettings(load("stk-settings",{perplexityKey:"",openaiKey:"",sqspKey:"",ahrefsKey:""}));
   },[]);
 
   const fetchCSV=useCallback(async()=>{
@@ -522,14 +522,14 @@ export default function ContentEngine(){
             {step===4&&<Card sx={{textAlign:"center",padding:40}}>
               <div style={{fontSize:40,marginBottom:12}}>✅</div>
               <div style={{fontFamily:F.d,fontSize:22,color:C.ink,marginBottom:8}}>Article in Pipeline</div>
-              <div style={{fontSize:13,color:C.slate,marginBottom:24}}>Deploy to your team workflow.</div>
+              <div style={{fontSize:13,color:C.slate,marginBottom:24}}>Article saved. Use the copy buttons above to grab meta, article, and schema for Squarespace.</div>
               <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
-                <Btn onClick={deployAsana} disabled={loading==="asana"}>{loading==="asana"?"Creating...":"Create Asana Tasks"}</Btn>
-                <Btn onClick={deployGmail} v="ghost" disabled={loading==="gmail"}>{loading==="gmail"?"Sending...":"Draft Review Email"}</Btn>
-                <Btn onClick={()=>{setStep(0);setArticle("");setBrief("");setReview("");setSc(null)}} v="secondary">New Article</Btn>
+                <Btn onClick={()=>{setStep(0);setArticle("");setBrief("");setReview("");setSc(null)}} v="primary">New Article</Btn>
+                <Btn onClick={()=>setTab("pipeline")} v="secondary">View Pipeline</Btn>
               </div>
-              {err.asanaDone&&<div style={{marginTop:12,fontSize:12,color:C.success,padding:8,background:"rgba(58,125,68,.06)",borderRadius:6}}>✓ Asana tasks created</div>}
-              {err.gmailDone&&<div style={{marginTop:6,fontSize:12,color:C.success,padding:8,background:"rgba(58,125,68,.06)",borderRadius:6}}>✓ Gmail draft created</div>}
+              <div style={{marginTop:16,fontSize:11,color:C.stone,padding:12,background:C.creamDark,borderRadius:8}}>
+                Asana task creation and Gmail notifications are available when using the Content Engine inside Claude.ai artifacts.
+              </div>
             </Card>}
 
             {loading&&<div style={{marginTop:16,padding:14,background:C.copperGlow,borderRadius:8,textAlign:"center"}}>
@@ -538,8 +538,6 @@ export default function ContentEngine(){
                 {loading==="draft"&&"Drafting article with voice library, AEO, schema, and conversion blocks..."}
                 {loading==="review"&&"Running dual-AI compliance review..."}
                 {loading?.startsWith("regen")&&"Revising section..."}
-                {loading==="asana"&&"Creating Asana tasks for the team..."}
-                {loading==="gmail"&&"Drafting review notification..."}
               </div>
             </div>}
           </div>
