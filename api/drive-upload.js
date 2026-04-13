@@ -1,6 +1,6 @@
 // Google Drive upload via service account
 // Requires GOOGLE_SERVICE_ACCOUNT_JSON env var in Vercel
-// Contains the full service account JSON credentials
+// Fix: scope changed from drive.file to drive, added supportsAllDrives
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   const credsJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!credsJson) {
-    return res.status(500).json({ error: 'GOOGLE_SERVICE_ACCOUNT_JSON not configured. See setup instructions.' });
+    return res.status(500).json({ error: 'GOOGLE_SERVICE_ACCOUNT_JSON not configured.' });
   }
 
   try {
@@ -21,17 +21,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'fileName and fileData (base64) required' });
     }
 
-    // Step 1: Create the file metadata
     const metadata = {
       name: fileName,
       mimeType: mimeType || 'image/png',
       parents: folderId ? [folderId] : [],
     };
 
-    // Step 2: Upload via multipart
     const boundary = 'stokeshire_upload_boundary';
-    const binaryData = Buffer.from(fileData, 'base64');
-
     const multipartBody = [
       `--${boundary}\r\n`,
       'Content-Type: application/json; charset=UTF-8\r\n\r\n',
@@ -44,7 +40,7 @@ export default async function handler(req, res) {
     ].join('');
 
     const uploadRes = await fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,webViewLink',
       {
         method: 'POST',
         headers: {
@@ -66,13 +62,12 @@ export default async function handler(req, res) {
   }
 }
 
-// JWT token generation for Google service account
 async function getAccessToken(creds) {
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: 'RS256', typ: 'JWT' };
   const claim = {
     iss: creds.client_email,
-    scope: 'https://www.googleapis.com/auth/drive.file',
+    scope: 'https://www.googleapis.com/auth/drive',
     aud: 'https://oauth2.googleapis.com/token',
     exp: now + 3600,
     iat: now,
@@ -82,10 +77,8 @@ async function getAccessToken(creds) {
   const encodedClaim = base64url(JSON.stringify(claim));
   const signatureInput = `${encodedHeader}.${encodedClaim}`;
 
-  // Import the private key and sign
   const key = await importPrivateKey(creds.private_key);
   const signature = await sign(key, signatureInput);
-
   const jwt = `${signatureInput}.${signature}`;
 
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -106,13 +99,7 @@ function base64url(str) {
 async function importPrivateKey(pem) {
   const pemContents = pem.replace(/-----BEGIN PRIVATE KEY-----/, '').replace(/-----END PRIVATE KEY-----/, '').replace(/\n/g, '');
   const binaryDer = Buffer.from(pemContents, 'base64');
-  return crypto.subtle.importKey(
-    'pkcs8',
-    binaryDer,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+  return crypto.subtle.importKey('pkcs8', binaryDer, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
 }
 
 async function sign(key, data) {
