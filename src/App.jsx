@@ -371,6 +371,10 @@ export default function ContentEngine(){
   const [voAudio,setVoAudio]=useState(null);
   const [voLoading,setVoLoading]=useState(false);
   const voRef=useRef(null);
+  // Reel
+  const [reelLoading,setReelLoading]=useState(false);
+  const [reelStatus,setReelStatus]=useState("");
+  const [reelUrl,setReelUrl]=useState(null);
   // Schema Generator
   const [schType,setSchType]=useState("blog");
   const [schFields,setSchFields]=useState({});
@@ -693,10 +697,109 @@ export default function ContentEngine(){
       const d=await r.json();
       const audioUrl=`data:audio/mpeg;base64,${d.audio_base64}`;
       setVoAudio(audioUrl);
+      setReelUrl(null); // clear any previous reel when new voiceover generated
       setSocToast(`Voiceover generated (${d.char_count} chars)`);setTimeout(()=>setSocToast(null),3000);
     }catch(e){setSocToast("Voiceover failed: "+e.message);setTimeout(()=>setSocToast(null),4000)}
     finally{setVoLoading(false)}
   },[socCaption]);
+
+  // ═══ REEL GENERATOR ═══
+  const reelGenerate=useCallback(async()=>{
+    if(!socCarousel?.slides?.length||!voAudio||!socRef.current)return;
+    setReelLoading(true);setReelUrl(null);
+    try{
+      // 1. Pre-capture every slide as a PNG data URL (reuses existing render pattern)
+      const{toPng}=await import("https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/+esm");
+      const slideDataUrls=[];
+      const savedTpl=socTpl,savedProps=socProps,savedActive=socActive;
+      for(let i=0;i<socCarousel.slides.length;i++){
+        setReelStatus(`Capturing slide ${i+1}/${socCarousel.slides.length}...`);
+        const s=socCarousel.slides[i];
+        setSocTpl(s.template);setSocProps({...SOC_DEFAULTS[s.template],...s.props});setSocActive(i);
+        await new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(ok,220))));
+        const dataUrl=await toPng(socRef.current,{width:1080,height:1350,pixelRatio:1,style:{transform:"none",transformOrigin:"top left"}});
+        slideDataUrls.push(dataUrl);
+      }
+      // Restore active slide
+      setSocTpl(savedTpl);setSocProps(savedProps);setSocActive(savedActive);
+
+      // 2. Load images into Image objects
+      setReelStatus("Loading frames...");
+      const images=await Promise.all(slideDataUrls.map(url=>new Promise((res,rej)=>{
+        const img=new Image();img.onload=()=>res(img);img.onerror=rej;img.src=url;
+      })));
+
+      // 3. Get audio duration
+      const audioDur=await new Promise((res,rej)=>{
+        const a=new Audio(voAudio);
+        a.onloadedmetadata=()=>res(a.duration);
+        a.onerror=rej;
+      });
+      const slideDur=audioDur/images.length;
+
+      // 4. Set up offscreen canvas (1080x1920 for 9:16 Reels — letterbox the 1080x1350 slides)
+      const W=1080,H=1920;
+      const canvas=document.createElement("canvas");
+      canvas.width=W;canvas.height=H;
+      const ctx=canvas.getContext("2d");
+      // Initial black background + first slide centered
+      ctx.fillStyle="#1a1814";ctx.fillRect(0,0,W,H);
+      const yOff=Math.round((H-1350)/2);
+      ctx.drawImage(images[0],0,yOff,1080,1350);
+
+      // 5. Wire audio into a Web Audio destination stream
+      const audioCtx=new AudioContext();
+      const audioEl=new Audio(voAudio);
+      const src=audioCtx.createMediaElementSource(audioEl);
+      const audioDest=audioCtx.createMediaStreamDestination();
+      src.connect(audioDest);
+      src.connect(audioCtx.destination); // play in speaker too
+
+      // 6. Combine canvas video + audio tracks
+      const canvasStream=canvas.captureStream(30);
+      const combined=new MediaStream([
+        ...canvasStream.getVideoTracks(),
+        ...audioDest.stream.getAudioTracks()
+      ]);
+      const mimeType=MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+        ?"video/webm;codecs=vp9,opus":"video/webm";
+      const recorder=new MediaRecorder(combined,{mimeType,videoBitsPerSecond:8_000_000});
+      const chunks=[];
+      recorder.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data)};
+      recorder.onstop=()=>{
+        const blob=new Blob(chunks,{type:"video/webm"});
+        setReelUrl(URL.createObjectURL(blob));
+        setReelStatus("");setReelLoading(false);
+        setSocToast("Reel ready — click Download");setTimeout(()=>setSocToast(null),4000);
+      };
+
+      // 7. Animate slides on canvas, synced to real time
+      setReelStatus("Recording reel...");
+      recorder.start(100);
+      audioEl.play();
+      const t0=performance.now();
+      let curSlide=0;
+      const animate=()=>{
+        const elapsed=(performance.now()-t0)/1000;
+        const nextSlide=Math.min(Math.floor(elapsed/slideDur),images.length-1);
+        if(nextSlide!==curSlide){
+          curSlide=nextSlide;
+          ctx.fillStyle="#1a1814";ctx.fillRect(0,0,W,H);
+          ctx.drawImage(images[curSlide],0,yOff,1080,1350);
+        }
+        if(elapsed<audioDur)requestAnimationFrame(animate);
+      };
+      requestAnimationFrame(animate);
+
+      // 8. Stop recorder after audio finishes (+500ms buffer)
+      setTimeout(()=>{audioEl.pause();recorder.stop();audioCtx.close()},(audioDur+0.5)*1000);
+
+    }catch(e){
+      console.error(e);
+      setReelStatus("");setReelLoading(false);
+      setSocToast("Reel failed: "+e.message);setTimeout(()=>setSocToast(null),4000);
+    }
+  },[socCarousel,voAudio,socRef,socTpl,socProps,socActive,SOC_DEFAULTS]);
 
   // ═══ SCHEMA GENERATOR ═══
   const SITE="https://www.wisconsindesignerdoodles.com";
@@ -1215,7 +1318,15 @@ export default function ContentEngine(){
                     <audio ref={voRef} src={voAudio} style={{width:"100%",height:36,borderRadius:6}} controls/>
                     <Btn onClick={()=>{const a=document.createElement("a");const dn=new Date().toISOString().slice(0,10);const sl=socUrl?socUrl.split("/").pop()?.replace(/[^a-z0-9-]/gi,""):"voiceover";a.download=`${dn}_${sl}_voiceover.mp3`;a.href=voAudio;a.click()}} v="secondary" sx={{width:"100%",fontSize:10,marginTop:6}}>Download MP3</Btn>
                   </div>}
-                  <div style={{fontSize:10,color:C.stone,marginTop:6}}>Uses your cloned voice via ElevenLabs. Caption text becomes the narration.</div>
+                  <div style={{fontSize:10,color:C.stone,marginTop:6,marginBottom:voAudio?10:0}}>Uses your cloned voice via ElevenLabs. Caption text becomes the narration.</div>
+                  {voAudio&&<div style={{borderTop:`1px solid ${C.warmGray}`,paddingTop:10,marginTop:2}}>
+                    <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".12em",textTransform:"uppercase",marginBottom:8}}>Create Reel</div>
+                    <Btn onClick={reelGenerate} disabled={reelLoading||!socCarousel?.slides?.length} sx={{width:"100%",fontSize:11,marginBottom:6}}>
+                      {reelLoading?(reelStatus||"Generating..."):"Create Reel (Slides + Voice)"}
+                    </Btn>
+                    {reelUrl&&<Btn onClick={()=>{const a=document.createElement("a");const dn=new Date().toISOString().slice(0,10);const sl=socUrl?socUrl.split("/").pop()?.replace(/[^a-z0-9-]/gi,""):"reel";a.download=`${dn}_${sl}_reel.webm`;a.href=reelUrl;a.click()}} v="secondary" sx={{width:"100%",fontSize:10,marginTop:4}}>Download Reel (.webm)</Btn>}
+                    <div style={{fontSize:10,color:C.stone,marginTop:6,lineHeight:1.5}}>Stitches all slides + voiceover into a 9:16 video. Ready for Reels &amp; Shorts.</div>
+                  </div>}
                 </Card>}
 
                 <Card>
