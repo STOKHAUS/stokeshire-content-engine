@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 
 /* ═══════════════════════════════════════════════════════════════
-   STOKESHIRE CONTENT ENGINE v3
+   STOKESHIRE CONTENT ENGINE v6
    Full content ops: Intel → Research → Draft → Review → Deploy
    Voice Library · Dual-AI Review · Memory Bank · Integrations
    ═══════════════════════════════════════════════════════════════ */
@@ -55,7 +55,7 @@ Title: [55-60 chars] | Description: [150-155 chars] | Slug | Primary Keyword | S
 
 const EDITOR_PROMPT = `You are the Stokeshire Compliance Editor. Audit only — do not rewrite.
 
-Check: (1) "Hypoallergenic" used as promise? Must be "lower-shedding" + disclaimer. (2) Health/temperament guarantees? (3) Exclamation points, hype, urgency? (4) Weight/size ranges accurate? Lifespan 12-15yr? (5) Quick Answer present? FAQ present? Conversion block? 3+ internal links? (6) Meta title/description? JSON-LD schema? Word count 1500+?
+Check: (1) "Hypoallergenic" used as promise? Must be "lower-shedding" + disclaimer. (2) Health/temperament guarantees? (3) Exclamation points, hype, urgency? (4) Weight/size ranges accurate? Lifespan 12-15yr? (5) Quick Answer present? FAQ present? Conversion block? 3+ internal links? (6) Meta title/description? JSON-LD schema? Word count 2000+?
 
 Return:
 ---COMPLIANCE REVIEW---
@@ -178,8 +178,51 @@ function SocCtaCard({headline,subtitle,ctaText,url}){
 }
 const SOC_CARDS={"editorial-dark":SocEditorialDark,"statement-cream":SocStatementCream,"split-editorial":SocSplitEditorial,"stat-card":SocStatCard,"carousel-text":SocCarouselText,"cta-card":SocCtaCard};
 
+// ═══ BLOG IMAGE LIBRARY ═══
+const BLOG_IMAGES=[
+  {url:"https://images.squarespace-cdn.com/content/v1/5b1cba79620b85e042964846/1709842075736-EX8K59CVFR4V8L0A2RZC/family-playing-with-australian-mountain-doodle-puppy.jpg",label:"Family with AMD Puppy",cat:"Lifestyle"},
+  {url:"https://images.squarespace-cdn.com/content/v1/5b1cba79620b85e042964846/0c2dd0f1-dd88-4d9b-8f93-d5d1d5bca96d/stella-temperament-assessment.jpg",label:"Stella Assessment",cat:"Training"},
+  {url:"https://images.squarespace-cdn.com/content/v1/5b1cba79620b85e042964846/1706625037453-2KGPMYHK2NK8CS4XWX7V/alby-bernedoodle-snow.jpg",label:"Alby in Snow",cat:"Lifestyle"},
+  {url:"https://images.squarespace-cdn.com/content/v1/5b1cba79620b85e042964846/b3ba0fcf-5adf-4d3a-8ca5-4c43bc2fb9de/stokes-family-forest-doodle.jpg",label:"Stokes Family Forest",cat:"Brand"},
+  {url:"https://images.squarespace-cdn.com/content/v1/5b1cba79620b85e042964846/50de18c6-28ca-4c27-8f22-5d88b9fcbf5c/doodle-puppies-group.jpg",label:"Doodle Puppies Group",cat:"Puppies"},
+  {url:"https://images.squarespace-cdn.com/content/v1/5b1cba79620b85e042964846/4f7ef024-6cd2-4ae3-8b26-be0ca3a1a0d1/bernedoodle-puppies-litter.jpg",label:"Bernedoodle Litter",cat:"Puppies"},
+  {url:"https://images.squarespace-cdn.com/content/v1/5b1cba79620b85e042964846/97ddf7e5-0e14-4e85-b7e0-6a0bc59d4d83/mini-bernedoodles-3-week.jpg",label:"Mini Bernedoodles 3wk",cat:"Puppies"},
+  {url:"https://images.squarespace-cdn.com/content/v1/5b1cba79620b85e042964846/1640021174478-S0RCVHX3RQKL2XD0G8HH/stokeshire-facility-ribfalls.jpg",label:"Facility at Ribfalls",cat:"Brand"},
+  {url:"https://images.squarespace-cdn.com/content/v1/5b1cba79620b85e042964846/8979ae64-5d99-48d1-a77b-aa3f7cbdaa5f/bernedoodle-12-week-graduation.jpg",label:"Bernedoodle Graduation",cat:"Training"},
+  {url:"https://images.squarespace-cdn.com/content/v1/5b1cba79620b85e042964846/4e14babc-76e8-4f19-8e1f-cf1a24e70a01/luxury-breeder-stokeshire.jpg",label:"Luxury Breeder",cat:"Brand"},
+];
+
+// ═══ PRESET CAROUSELS ═══
+const PRESET_CAROUSELS=[
+  {name:"Temperament Testing",desc:"Why we test every puppy before placement",slides:[
+    {template:"editorial-dark",props:{tagline:"The Science Behind Selection",headline:"Why We Temperament Test Every Puppy",accentWord:"Every Puppy",subtitle:"Matching the right dog to the right family is not a guess. It is a process.",backgroundImage:BLOG_IMAGES[1].url}},
+    {template:"carousel-text",props:{slideNumber:2,totalSlides:6,headline:"What Is Temperament Testing?",body:"A structured series of behavioral assessments conducted between weeks 7 and 8. We measure prey drive, sound sensitivity, touch tolerance, social attraction, and recovery from startle.",footer:"Stokeshire Designer Doodles"}},
+    {template:"stat-card",props:{number:"49",label:"Individual Data Points per Puppy",context:"Every puppy is scored across seven behavioral categories. Not a feeling. A measurement."}},
+    {template:"carousel-text",props:{slideNumber:4,totalSlides:6,headline:"Why It Matters",body:"A therapy-grade companion requires more than good genetics. The right temperament, matched to the right family, determines long-term success.",footer:"Stokeshire Designer Doodles"}},
+    {template:"statement-cream",props:{quote:"We did not choose our puppy. The data chose for us. And it was the best decision we never had to make.",attribution:"The Whitfield Family - Chicago, IL",divider:true}},
+    {template:"cta-card",props:{headline:"Read the Full Guide",subtitle:"How temperament testing shapes every placement at Stokeshire.",ctaText:"Link in Bio",url:"wisconsindesignerdoodles.com"}},
+  ]},
+  {name:"Doodle School",desc:"What happens in the first 12 weeks",slides:[
+    {template:"editorial-dark",props:{tagline:"Our Curriculum",headline:"What Is Doodle School?",accentWord:"Doodle School",subtitle:"Four weeks of foundational training before your puppy comes home. Not daycare. A curriculum."}},
+    {template:"carousel-text",props:{slideNumber:2,totalSlides:6,headline:"Weeks 1-3: Foundation",body:"Crate training, house training, leash introduction, basic impulse control. The fundamentals that make the first week home feel effortless.",footer:"Stokeshire Designer Doodles"}},
+    {template:"carousel-text",props:{slideNumber:3,totalSlides:6,headline:"Week 4: Socialization",body:"Novel surfaces, sounds, people, and environments. We build confidence through structured exposure, not flooding.",footer:"Stokeshire Designer Doodles"}},
+    {template:"stat-card",props:{number:"100+",label:"Socialization Experiences",context:"Each puppy encounters over 100 novel stimuli during Doodle School. Intentional, documented, measured."}},
+    {template:"statement-cream",props:{quote:"Our puppy came home and slept through the night. She already knew her name. Doodle School changed everything.",attribution:"The Park Family - Minneapolis, MN",divider:true}},
+    {template:"cta-card",props:{headline:"Learn About Doodle School",subtitle:"The training program that sets every Stokeshire puppy apart.",ctaText:"Link in Bio",url:"wisconsindesignerdoodles.com"}},
+  ]},
+  {name:"Breed Spotlight: AMD",desc:"Australian Mountain Doodle overview",slides:[
+    {template:"editorial-dark",props:{tagline:"Breed Spotlight",headline:"The Australian Mountain Doodle",accentWord:"Australian Mountain Doodle",subtitle:"Three breeds. One intention. The calm of the Bernese, the intelligence of the Poodle, the resilience of the Australian Shepherd.",backgroundImage:BLOG_IMAGES[0].url}},
+    {template:"carousel-text",props:{slideNumber:2,totalSlides:6,headline:"What Makes an AMD Different?",body:"A tri-breed cross that combines the best temperament traits of three working breeds. Lower-shedding coats, stable nervous systems, and exceptional trainability.",footer:"Stokeshire Designer Doodles"}},
+    {template:"stat-card",props:{number:"3",label:"Foundation Breeds",context:"Bernese Mountain Dog for calm. Poodle for intelligence. Australian Shepherd for resilience. Brought together with purpose, not chance."}},
+    {template:"carousel-text",props:{slideNumber:4,totalSlides:6,headline:"Size and Temperament",body:"Standard AMDs typically range from 50 to 80 pounds. They are known for their gentle disposition, making them exceptional family companions and therapy candidates.",footer:"Stokeshire Designer Doodles"}},
+    {template:"statement-cream",props:{quote:"We researched every doodle breed for two years. The AMD was the only one that checked every box for our family.",attribution:"The Henderson Family - Madison, WI",divider:true}},
+    {template:"cta-card",props:{headline:"Explore the AMD Breed",subtitle:"Everything you need to know about the Australian Mountain Doodle.",ctaText:"Link in Bio",url:"wisconsindesignerdoodles.com/australian-mountain-doodle"}},
+  ]},
+];
+
 // ═══ UTILITIES ═══
-function csvParse(t,skip=0){const ls=t.split("\n").filter(l=>l.trim()).slice(skip);if(ls.length<2)return[];const hs=csvLine(ls[0]);return ls.slice(1).map(l=>{const vs=csvLine(l);const r={};hs.forEach((h,i)=>{r[h]=vs[i]||""});return r}).filter(r=>Object.values(r).some(v=>v))}
+function csvParse(t,skip=0){const rows=csvSplitRows(t).slice(skip);if(rows.length<2)return[];const hs=csvLine(rows[0]);return rows.slice(1).map(l=>{const vs=csvLine(l);const r={};hs.forEach((h,i)=>{r[h]=vs[i]||""});return r}).filter(r=>Object.values(r).some(v=>v))}
+function csvSplitRows(t){const rows=[];let cur="",q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(ch==='"')q=!q;else if(!q&&(ch==="\n"||(ch==="\r"&&t[i+1]==="\n"&&++i))){if(cur.trim())rows.push(cur);cur="";continue}cur+=ch}if(cur.trim())rows.push(cur);return rows}
 function csvLine(l){const r=[];let c="",q=false;for(let i=0;i<l.length;i++){const ch=l[i];if(ch==='"'){if(q&&l[i+1]==='"'){c+='"';i++}else q=!q}else if(ch===","&&!q){r.push(c.trim());c=""}else c+=ch}r.push(c.trim());return r}
 
 function store(k,d){try{localStorage.setItem(k,JSON.stringify(d))}catch(e){console.error(e)}}
@@ -228,11 +271,11 @@ function score(out){
     {n:"Meta Description",p:out.includes("Description:")},
     {n:"JSON-LD Schema",p:out.includes("ld+json")||out.includes('"@type"')},
     {n:"3+ Internal Links",p:(out.match(/\[INTERNAL LINK/g)||[]).length>=3},
-    {n:"No Hypoallergenic Promise",p:out.includes("lower-shedding")||out.includes("No dog is truly")||!out.toLowerCase().includes("hypoallergenic")},
+    {n:"No Hypoallergenic Promise",p:(()=>{const lc=out.toLowerCase();if(!lc.includes("hypoallergenic"))return true;return lc.includes("lower-shedding")&&(lc.includes("no dog is truly")||lc.includes("not truly hypoallergenic")||lc.includes("no coat is completely"))})()},
     {n:"Hedged Language",p:/often|typically|may|around|generally/.test(out)},
     {n:"Stokeshire Voice Marker",p:out.includes("At Stokeshire")},
     {n:"Commerce Opportunities",p:out.includes("[COMMERCE")||out.includes("Commerce")},
-    {n:"Word Count 1500+",p:out.split(/\s+/).length>1500},
+    {n:"Word Count 2000+",p:out.split(/\s+/).length>2000},
   ];
   const pass=ch.filter(c=>c.p).length;
   return{checks:ch,score:Math.round(pass/ch.length*100),pass,total:ch.length};
@@ -247,7 +290,7 @@ const Btn=({children,onClick,disabled,v="primary",sx={}})=>{
   return <button onClick={onClick} disabled={disabled} style={vs[v]}>{children}</button>;
 };
 
-const Card=({children,sx={}})=><div style={{background:C.white,borderRadius:10,border:`1px solid ${C.warmGray}`,padding:"20px 24px",...sx}}>{children}</div>;
+const Card=({children,sx={},onClick,...rest})=><div style={{background:C.white,borderRadius:10,border:`1px solid ${C.warmGray}`,padding:"20px 24px",...sx}} onClick={onClick} {...rest}>{children}</div>;
 
 const Steps=({steps,cur})=>(
   <div style={{display:"flex",gap:0,marginBottom:28}}>
@@ -299,6 +342,7 @@ export default function ContentEngine(){
   const [socStatus,setSocStatus]=useState("");
   const [socToast,setSocToast]=useState(null);
   const [socScale,setSocScale]=useState(0.32);
+  const [socImgFilter,setSocImgFilter]=useState("All");
   const socRef=useRef(null);
   // Schema Generator
   const [schType,setSchType]=useState("blog");
@@ -488,7 +532,17 @@ export default function ContentEngine(){
       setSocStatus("Generating carousel...");
       const d=await ai([{role:"user",content:`Create an Instagram carousel from this blog.\n\nTitle: ${title}\n\nContent:\n${bodyText.substring(0,4000)}`}],{system:SOCIAL_PROMPT});
       const raw=aiText(d);
-      const carousel=JSON.parse(raw.replace(/```json|```/g,"").trim());
+      // Extract JSON robustly - find the first { to last }
+      let jsonStr=raw.replace(/```json|```/g,"").trim();
+      const firstBrace=jsonStr.indexOf("{");const lastBrace=jsonStr.lastIndexOf("}");
+      if(firstBrace===-1||lastBrace===-1)throw new Error("No JSON object found in model response");
+      jsonStr=jsonStr.substring(firstBrace,lastBrace+1);
+      let carousel;
+      try{carousel=JSON.parse(jsonStr)}catch(pe){throw new Error("Failed to parse carousel JSON: "+pe.message)}
+      if(!carousel.slides||!Array.isArray(carousel.slides)||!carousel.slides.length)throw new Error("Carousel has no slides array");
+      // Validate each slide has required props
+      carousel.slides=carousel.slides.filter(s=>s&&s.template&&s.props);
+      if(!carousel.slides.length)throw new Error("No valid slides after filtering");
       const total=carousel.slides.length;
       carousel.slides.forEach((s,i)=>{if(s.template==="carousel-text"){s.props.slideNumber=i+1;s.props.totalSlides=total}});
       setSocCarousel(carousel);setSocCaption(carousel.caption||"");setSocActive(0);
@@ -534,8 +588,8 @@ export default function ContentEngine(){
         // Switch to this slide
         const s=socCarousel.slides[i];
         setSocTpl(s.template);setSocProps({...SOC_DEFAULTS[s.template],...s.props});setSocActive(i);
-        // Wait for render
-        await new Promise(ok=>setTimeout(ok,500));
+        // Wait for React render + paint (double rAF + safety margin)
+        await new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(ok,200))));
         const dataUrl=await toPng(socRef.current,{width:1080,height:1350,pixelRatio:1,style:{transform:"none",transformOrigin:"top left"}});
         const base64=dataUrl.split(",")[1];
         await driveUpload(`slide-${i+1}.png`,base64,folder.id);
@@ -551,6 +605,56 @@ export default function ContentEngine(){
     }catch(e){console.error(e);setSocStatus("");setSocToast("Drive export failed: "+e.message);setTimeout(()=>setSocToast(null),4000)}
     finally{setSocLoading(false)}
   },[socCarousel,socCaption,socHashtags,DRIVE_PARENT_FOLDER]);
+
+  // Load a preset carousel
+  const socLoadPreset=useCallback((preset)=>{
+    const total=preset.slides.length;
+    const slides=preset.slides.map((s,i)=>{
+      const props={...s.props};
+      if(s.template==="carousel-text"){props.slideNumber=i+1;props.totalSlides=total}
+      return{template:s.template,props};
+    });
+    const carousel={caption:"",slides};
+    setSocCarousel(carousel);setSocCaption("");setSocActive(0);
+    if(slides.length){const f=slides[0];setSocTpl(f.template);setSocProps({...SOC_DEFAULTS[f.template],...f.props})}
+    setSocToast("Loaded: "+preset.name);setTimeout(()=>setSocToast(null),2500);
+  },[]);
+
+  // Batch download all slides as PNGs (no Drive needed)
+  const socDownloadAll=useCallback(async()=>{
+    if(!socCarousel?.slides?.length||!socRef.current)return;
+    setSocLoading(true);setSocStatus("Downloading all slides...");
+    try{
+      const{toPng}=await import("https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/+esm");
+      for(let i=0;i<socCarousel.slides.length;i++){
+        setSocStatus(`Rendering slide ${i+1}/${socCarousel.slides.length}...`);
+        const s=socCarousel.slides[i];
+        setSocTpl(s.template);setSocProps({...SOC_DEFAULTS[s.template],...s.props});setSocActive(i);
+        await new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(ok,200))));
+        const dataUrl=await toPng(socRef.current,{width:1080,height:1350,pixelRatio:1,style:{transform:"none",transformOrigin:"top left"}});
+        const a=document.createElement("a");a.download=`stokeshire-slide-${i+1}.png`;a.href=dataUrl;a.click();
+        await new Promise(ok=>setTimeout(ok,300));
+      }
+      setSocStatus("");setSocToast("All "+socCarousel.slides.length+" slides downloaded");setTimeout(()=>setSocToast(null),3000);
+    }catch(e){console.error(e);setSocStatus("");setSocToast("Batch download failed: "+e.message);setTimeout(()=>setSocToast(null),4000)}
+    finally{setSocLoading(false)}
+  },[socCarousel]);
+
+  // Insert blog image into current slide
+  const socInsertImage=useCallback((url)=>{
+    const tpl=socTpl;
+    if(tpl==="editorial-dark"){setSocProps(p=>({...p,backgroundImage:url}))}
+    else if(tpl==="split-editorial"){setSocProps(p=>({...p,imageUrl:url}))}
+    else{setSocToast("This template doesn\'t support images");setTimeout(()=>setSocToast(null),2500);return}
+    if(socCarousel?.slides?.length){
+      const updated={...socCarousel,slides:[...socCarousel.slides]};
+      updated.slides[socActive]={...updated.slides[socActive],props:{...updated.slides[socActive].props}};
+      if(tpl==="editorial-dark")updated.slides[socActive].props.backgroundImage=url;
+      else if(tpl==="split-editorial")updated.slides[socActive].props.imageUrl=url;
+      setSocCarousel(updated);
+    }
+    setSocToast("Image inserted");setTimeout(()=>setSocToast(null),2000);
+  },[socTpl,socCarousel,socActive]);
 
   // ═══ SCHEMA GENERATOR ═══
   const SITE="https://www.wisconsindesignerdoodles.com";
@@ -977,6 +1081,25 @@ export default function ContentEngine(){
               {socStatus&&<div style={{fontSize:12,color:C.copper,marginTop:8}}>{socStatus}</div>}
             </Card>
 
+            {/* Preset Carousels */}
+            <Card sx={{marginBottom:20}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                <div>
+                  <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".15em",textTransform:"uppercase"}}>Preset Carousels</div>
+                  <div style={{fontSize:11,color:C.stone,marginTop:2}}>One-click branded carousels for common content types</div>
+                </div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+                {PRESET_CAROUSELS.map(p=>(
+                  <button key={p.name} onClick={()=>socLoadPreset(p)} style={{textAlign:"left",padding:"14px 16px",borderRadius:8,border:`1px solid ${C.warmGray}`,background:C.white,cursor:"pointer",transition:"border-color .2s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.copper} onMouseLeave={e=>e.currentTarget.style.borderColor=C.warmGray}>
+                    <div style={{fontSize:13,fontWeight:600,color:C.ink,marginBottom:4}}>{p.name}</div>
+                    <div style={{fontSize:11,color:C.slate}}>{p.desc}</div>
+                    <div style={{fontSize:10,color:C.stone,marginTop:6}}>{p.slides.length} slides</div>
+                  </button>
+                ))}
+              </div>
+            </Card>
+
             <div style={{display:"grid",gridTemplateColumns:"280px 1fr 300px",gap:20}}>
               {/* Left: Templates + Editor */}
               <div>
@@ -998,6 +1121,25 @@ export default function ContentEngine(){
                   {f.type==="boolean"&&<button onClick={()=>setSocProps(p=>({...p,[f.key]:!p[f.key]}))} style={{padding:"6px 16px",borderRadius:4,border:`1px solid ${C.warmGray}`,background:socProps[f.key]?C.copper:C.white,color:socProps[f.key]?C.white:C.slate,fontFamily:F.b,fontSize:11,cursor:"pointer"}}>{socProps[f.key]?"On":"Off"}</button>}
                   {f.type==="select"&&<select value={socProps[f.key]||f.options?.[0]} onChange={e=>setSocProps(p=>({...p,[f.key]:e.target.value}))} style={{...is,fontSize:12}}>{f.options?.map(o=><option key={o} value={o}>{o}</option>)}</select>}
                 </div>)}
+
+                {/* Image Library */}
+                <div style={{marginTop:20}}>
+                  <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".15em",textTransform:"uppercase",marginBottom:8}}>Image Library</div>
+                  <div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>
+                    {["All","Lifestyle","Puppies","Training","Brand"].map(c=>(
+                      <button key={c} onClick={()=>setSocImgFilter(c)} style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontFamily:F.b,border:socImgFilter===c?`1px solid ${C.copper}`:`1px solid ${C.warmGray}`,background:socImgFilter===c?C.copperGlow:"transparent",color:socImgFilter===c?C.copper:C.slate,cursor:"pointer"}}>{c}</button>
+                    ))}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,maxHeight:200,overflowY:"auto"}}>
+                    {BLOG_IMAGES.filter(img=>socImgFilter==="All"||img.cat===socImgFilter).map((img,i)=>(
+                      <div key={i} onClick={()=>socInsertImage(img.url)} style={{cursor:"pointer",borderRadius:4,overflow:"hidden",border:`1px solid ${C.warmGray}`,transition:"border-color .2s",position:"relative"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.copper} onMouseLeave={e=>e.currentTarget.style.borderColor=C.warmGray}>
+                        <img src={img.url+"?format=100w"} alt={img.label} style={{width:"100%",height:60,objectFit:"cover",display:"block"}} loading="lazy"/>
+                        <div style={{position:"absolute",bottom:0,left:0,right:0,background:"rgba(28,28,28,0.7)",padding:"2px 4px",fontSize:8,color:C.cream,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{img.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{fontSize:9,color:C.stone,marginTop:4}}>Click to insert into current slide (editorial-dark or split-editorial)</div>
+                </div>
               </div>
 
               {/* Center: Preview */}
@@ -1024,6 +1166,7 @@ export default function ContentEngine(){
                 <Card>
                   <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".15em",textTransform:"uppercase",marginBottom:8}}>Export</div>
                   <Btn onClick={socDownload} v="secondary" sx={{width:"100%",fontSize:11,marginBottom:8}}>Download PNG (1080 x 1350)</Btn>
+                  {socCarousel&&socCarousel.slides?.length>1&&<Btn onClick={socDownloadAll} disabled={socLoading} v="ghost" sx={{width:"100%",fontSize:11,marginBottom:8}}>{socLoading?"Downloading...":"Download All PNGs (No Drive)"}</Btn>}
                   {socCarousel&&socCarousel.slides?.length>1&&<Btn onClick={socExportDrive} disabled={socLoading} sx={{width:"100%",fontSize:11,marginBottom:8}}>
                     {socLoading?"Exporting...":"Export All to Google Drive"}
                   </Btn>}
@@ -1156,7 +1299,7 @@ export default function ContentEngine(){
                   <div style={{fontSize:28,marginBottom:12}}>🏗️</div>
                   <div style={{fontFamily:F.d,fontSize:18,color:C.ink,marginBottom:8}}>Select a page type and fill in the fields</div>
                   <div style={{fontSize:12,color:C.slate,maxWidth:400,marginInline:"auto",lineHeight:1.6}}>
-                    The generator outputs JSON-LD wrapped in a script tag. Copy and paste into the page's Settings > Advanced > Page Header Code Injection in Squarespace.
+                    The generator outputs JSON-LD wrapped in a script tag. Copy and paste into the page's Settings → Advanced → Page Header Code Injection in Squarespace.
                   </div>
                 </Card>}
 
@@ -1166,7 +1309,7 @@ export default function ContentEngine(){
                     <div style={{fontSize:12,color:"rgba(222,211,191,.5)",lineHeight:1.7}}>
                       <div>1. Copy the output above</div>
                       <div>2. Open the page in Squarespace editor</div>
-                      <div>3. Go to Page Settings (gear icon) > Advanced</div>
+                      <div>3. Go to Page Settings (gear icon) → Advanced</div>
                       <div>4. Paste into Page Header Code Injection</div>
                       <div>5. Save and publish</div>
                       <div>6. Validate at validator.schema.org</div>
@@ -1261,7 +1404,7 @@ export default function ContentEngine(){
 
       <div style={{padding:"14px 32px",borderTop:`1px solid ${C.warmGray}`,display:"flex",justifyContent:"space-between"}}>
         <span style={{fontSize:11,color:C.stone}}>Stokeshire Designer Doodles · DATCP #514401-DS</span>
-        <span style={{fontSize:11,color:C.stone}}>Content Engine v5 · Voice Library · Dual-AI Review · Social Studio · Schema Generator · Memory Bank</span>
+        <span style={{fontSize:11,color:C.stone}}>Content Engine v6 · Voice Library · Dual-AI Review · Social Studio+ · Schema Generator · Memory Bank</span>
       </div>
       <div style={{position:"fixed",bottom:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${C.copper},${C.copperLight},${C.copper})`,zIndex:999}}/>
     </div>
