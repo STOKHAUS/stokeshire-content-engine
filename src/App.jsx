@@ -106,76 +106,99 @@ const SOC_FIELDS={
 const SOC_TEMPLATES=[{id:"editorial-dark",name:"Editorial Dark"},{id:"statement-cream",name:"Statement Cream"},{id:"split-editorial",name:"Split Editorial"},{id:"stat-card",name:"Stat Card"},{id:"carousel-text",name:"Carousel Text"},{id:"cta-card",name:"CTA Card"}];
 
 // ═══ SOCIAL STUDIO CARD COMPONENTS ═══
+const BRAND_PATTERN="https://images.squarespace-cdn.com/content/5f57a5db19270a2fe560d10c/c99fe7f4-0947-4bb8-a3fd-6ccab42079d8/stokeshire-brand-pattern.26.jpg?content-type=image%2Fjpeg";
 function socAccent(text,word,style){if(!word?.trim())return text;try{const e=word.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");return text.split(new RegExp(`(${e})`,"i")).map((p,i)=>p.toLowerCase()===word.toLowerCase()?<span key={i} style={style}>{p}</span>:<span key={i}>{p}</span>)}catch{return text}}
-const socFoot={position:"absolute",bottom:44,left:0,right:0,textAlign:"center",fontFamily:F.b,fontWeight:300,fontSize:14,letterSpacing:".25em",textTransform:"uppercase",color:C.stone};
+const socFoot={position:"absolute",bottom:44,left:0,right:0,textAlign:"center",fontFamily:F.b,fontWeight:300,fontSize:13,letterSpacing:".3em",textTransform:"uppercase"};
+const brandOverlay={position:"absolute",inset:0,backgroundImage:`url(${BRAND_PATTERN})`,backgroundSize:"420px",opacity:.035,pointerEvents:"none"};
+const copperLine=(w=60)=>({width:w,height:1.5,background:"linear-gradient(90deg,transparent,#AD7A28,transparent)",margin:"0 auto"});
+const cornerAccent=(pos)=>{const base={position:"absolute",width:40,height:40,borderColor:"rgba(173,122,40,0.15)",borderStyle:"solid",borderWidth:0};const map={tl:{top:32,left:32,borderTopWidth:1,borderLeftWidth:1},tr:{top:32,right:32,borderTopWidth:1,borderRightWidth:1},bl:{bottom:32,left:32,borderBottomWidth:1,borderLeftWidth:1},br:{bottom:32,right:32,borderBottomWidth:1,borderRightWidth:1}};return{...base,...(map[pos]||{})}};
 
 function SocEditorialDark({tagline,headline,accentWord,subtitle,backgroundImage}){
-  return <div style={{width:1080,height:1350,position:"relative",overflow:"hidden",background:C.charcoal,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center"}}>
-    {backgroundImage&&<div style={{position:"absolute",inset:0,backgroundImage:`url(${backgroundImage})`,backgroundSize:"cover",backgroundPosition:"center",opacity:.15,filter:"grayscale(100%)"}}/>}
-    <div style={{position:"relative",zIndex:2,textAlign:"center",padding:"80px 72px"}}>
-      {tagline&&<div style={{fontFamily:F.b,fontWeight:300,fontSize:18,letterSpacing:".35em",textTransform:"uppercase",color:C.copper,marginBottom:48}}>{tagline}</div>}
-      <h1 style={{fontFamily:F.d,fontSize:78,fontWeight:400,lineHeight:1.15,color:C.cream,textTransform:"uppercase",letterSpacing:".02em",margin:"0 0 48px"}}>{socAccent(headline||"",accentWord,{color:C.copper,fontStyle:"italic"})}</h1>
-      {subtitle&&<p style={{fontFamily:F.d,fontStyle:"italic",fontSize:32,fontWeight:300,lineHeight:1.55,color:C.stone,margin:0,maxWidth:700,marginInline:"auto"}}>{subtitle}</p>}
+  return <div style={{width:1080,height:1350,position:"relative",overflow:"hidden",background:"linear-gradient(175deg,#1C1C1C 0%,#2A2118 50%,#1C1C1C 100%)",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center"}}>
+    <div style={brandOverlay}/>
+    {backgroundImage&&<div style={{position:"absolute",inset:0,backgroundImage:`url(${backgroundImage})`,backgroundSize:"cover",backgroundPosition:"center",opacity:.18,filter:"grayscale(100%) contrast(1.1)"}}/>}
+    <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 40%, rgba(173,122,40,0.06) 0%, transparent 60%)"}}/>
+    <div style={cornerAccent("tl")}/><div style={cornerAccent("tr")}/><div style={cornerAccent("bl")}/><div style={cornerAccent("br")}/>
+    <div style={{position:"relative",zIndex:2,textAlign:"center",padding:"100px 80px"}}>
+      {tagline&&<div style={{fontFamily:F.b,fontWeight:300,fontSize:14,letterSpacing:".4em",textTransform:"uppercase",color:"rgba(173,122,40,0.5)",marginBottom:48}}>{tagline}</div>}
+      <h1 style={{fontFamily:F.d,fontSize:72,fontWeight:300,lineHeight:1.12,color:"#EDE5D8",letterSpacing:".02em",margin:"0 0 40px"}}>{socAccent(headline||"",accentWord,{color:C.copper,fontStyle:"italic"})}</h1>
+      <div style={copperLine(80)}/>
+      {subtitle&&<p style={{fontFamily:F.d,fontStyle:"italic",fontSize:28,fontWeight:300,lineHeight:1.6,color:"rgba(222,211,191,0.45)",margin:"40px auto 0",maxWidth:700}}>{subtitle}</p>}
     </div>
-    <div style={socFoot}>Stokeshire Designer Doodles</div>
+    <div style={{...socFoot,color:"rgba(222,211,191,0.2)"}}>Stokeshire Designer Doodles</div>
   </div>
 }
 function SocStatementCream({quote,attribution,divider}){
-  return <div style={{width:1080,height:1350,background:C.cream,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",position:"relative"}}>
-    <div style={{textAlign:"center",padding:"80px 88px",maxWidth:900}}>
-      {divider&&<div style={{width:60,height:2,background:C.copper,margin:"0 auto 56px"}}/>}
-      <blockquote style={{fontFamily:F.d,fontSize:42,fontWeight:400,fontStyle:"italic",lineHeight:1.55,color:C.ink,margin:"0 0 48px"}}>{quote}</blockquote>
-      {divider&&<div style={{width:60,height:2,background:C.copper,margin:"0 auto 40px"}}/>}
-      {attribution&&<p style={{fontFamily:F.b,fontWeight:300,fontSize:18,letterSpacing:".2em",textTransform:"uppercase",color:C.stone,margin:0}}>{attribution}</p>}
+  return <div style={{width:1080,height:1350,background:"linear-gradient(175deg,#FAF8F4 0%,#EDE5D8 100%)",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",position:"relative"}}>
+    <div style={{...brandOverlay,opacity:.025}}/>
+    <div style={cornerAccent("tl")}/><div style={cornerAccent("tr")}/><div style={cornerAccent("bl")}/><div style={cornerAccent("br")}/>
+    <div style={{textAlign:"center",padding:"100px 96px",maxWidth:920,position:"relative"}}>
+      <div style={{fontFamily:F.d,fontSize:120,fontWeight:300,color:"rgba(173,122,40,0.08)",position:"absolute",top:40,left:"50%",transform:"translateX(-50%)",lineHeight:1}}>\u201C</div>
+      {divider&&<div style={{...copperLine(60),margin:"0 auto 56px"}}/>}
+      <blockquote style={{fontFamily:F.d,fontSize:38,fontWeight:300,fontStyle:"italic",lineHeight:1.6,color:C.ink,margin:"0 0 48px"}}>{quote}</blockquote>
+      {divider&&<div style={{...copperLine(60),margin:"0 auto 40px"}}/>}
+      {attribution&&<p style={{fontFamily:F.b,fontWeight:300,fontSize:14,letterSpacing:".25em",textTransform:"uppercase",color:C.stone,margin:0}}>{attribution}</p>}
     </div>
     <div style={{...socFoot,color:C.slate}}>Stokeshire Designer Doodles</div>
   </div>
 }
 function SocSplitEditorial({headline,body,imageUrl,tagline,imagePosition}){
   const pos=imagePosition||"left";
-  const txt=<div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"64px 52px",background:C.charcoal}}>
-    {tagline&&<div style={{fontFamily:F.b,fontWeight:300,fontSize:15,letterSpacing:".3em",textTransform:"uppercase",color:C.copper,marginBottom:28}}>{tagline}</div>}
-    <h2 style={{fontFamily:F.d,fontSize:44,fontWeight:400,lineHeight:1.2,color:C.cream,margin:"0 0 24px"}}>{headline}</h2>
-    <p style={{fontFamily:F.b,fontWeight:300,fontSize:18,lineHeight:1.65,color:C.stone,margin:0}}>{body}</p>
+  const txt=<div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",padding:"72px 56px",background:"linear-gradient(175deg,#1C1C1C,#2A2118)",position:"relative"}}>
+    <div style={{...brandOverlay,opacity:.03}}/>
+    <div style={{position:"relative",zIndex:2}}>
+      {tagline&&<div style={{fontFamily:F.b,fontWeight:300,fontSize:13,letterSpacing:".35em",textTransform:"uppercase",color:"rgba(173,122,40,0.5)",marginBottom:28}}>{tagline}</div>}
+      <h2 style={{fontFamily:F.d,fontSize:42,fontWeight:300,lineHeight:1.2,color:"#EDE5D8",margin:"0 0 20px"}}>{headline}</h2>
+      <div style={{...copperLine(48),margin:"0 0 24px"}}/>
+      <p style={{fontFamily:F.b,fontWeight:300,fontSize:17,lineHeight:1.75,color:"rgba(222,211,191,0.5)",margin:0}}>{body}</p>
+    </div>
   </div>;
-  const img=<div style={{flex:1,background:C.ink,backgroundImage:imageUrl?`url(${imageUrl})`:"none",backgroundSize:"cover",backgroundPosition:"center"}}>{!imageUrl&&<div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.b,fontSize:15,color:C.stone,letterSpacing:".15em",textTransform:"uppercase"}}>Add Image URL</div>}</div>;
+  const img=<div style={{flex:1,background:C.ink,backgroundImage:imageUrl?`url(${imageUrl})`:"none",backgroundSize:"cover",backgroundPosition:"center",position:"relative"}}>{!imageUrl&&<div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F.b,fontSize:13,color:C.stone,letterSpacing:".15em",textTransform:"uppercase"}}>Add Image URL</div>}{imageUrl&&<div style={{position:"absolute",inset:0,background:pos==="left"?"linear-gradient(90deg,transparent 70%,#1C1C1C)":"linear-gradient(270deg,transparent 70%,#1C1C1C)"}}/>}</div>;
   return <div style={{width:1080,height:1350,display:"flex",overflow:"hidden"}}>{pos==="left"?<>{img}{txt}</>:<>{txt}{img}</>}</div>
 }
 function SocStatCard({number,label,context}){
-  return <div style={{width:1080,height:1350,background:C.charcoal,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",position:"relative"}}>
-    <div style={{textAlign:"center",padding:"80px 72px"}}>
-      <div style={{fontFamily:F.d,fontSize:180,fontWeight:300,lineHeight:1,color:C.copper,marginBottom:16}}>{number}</div>
-      <div style={{fontFamily:F.b,fontWeight:300,fontSize:22,letterSpacing:".3em",textTransform:"uppercase",color:C.cream,marginBottom:40}}>{label}</div>
-      <div style={{width:60,height:2,background:C.copper,margin:"0 auto 40px"}}/>
-      {context&&<p style={{fontFamily:F.d,fontStyle:"italic",fontSize:28,fontWeight:400,lineHeight:1.55,color:C.stone,margin:0,maxWidth:600}}>{context}</p>}
+  return <div style={{width:1080,height:1350,background:"linear-gradient(175deg,#1C1C1C 0%,#2A2118 50%,#1C1C1C 100%)",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",position:"relative"}}>
+    <div style={brandOverlay}/>
+    <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 45%, rgba(173,122,40,0.08) 0%, transparent 50%)"}}/>
+    <div style={cornerAccent("tl")}/><div style={cornerAccent("tr")}/><div style={cornerAccent("bl")}/><div style={cornerAccent("br")}/>
+    <div style={{textAlign:"center",padding:"80px 72px",position:"relative",zIndex:2}}>
+      <div style={{fontFamily:F.d,fontSize:160,fontWeight:300,lineHeight:1,color:C.copper,marginBottom:12,textShadow:"0 4px 40px rgba(173,122,40,0.15)"}}>{number}</div>
+      <div style={{fontFamily:F.b,fontWeight:300,fontSize:18,letterSpacing:".35em",textTransform:"uppercase",color:"#EDE5D8",marginBottom:40}}>{label}</div>
+      <div style={copperLine(60)}/>
+      {context&&<p style={{fontFamily:F.d,fontStyle:"italic",fontSize:26,fontWeight:300,lineHeight:1.6,color:"rgba(222,211,191,0.4)",margin:"40px auto 0",maxWidth:600}}>{context}</p>}
     </div>
-    <div style={socFoot}>Stokeshire Designer Doodles</div>
+    <div style={{...socFoot,color:"rgba(222,211,191,0.2)"}}>Stokeshire Designer Doodles</div>
   </div>
 }
 function SocCarouselText({slideNumber,totalSlides,headline,body,footer}){
-  return <div style={{width:1080,height:1350,background:C.charcoal,display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"80px 72px"}}>
-    <div style={{fontFamily:F.b,fontWeight:300,fontSize:15,letterSpacing:".25em",color:C.stone}}>{slideNumber} / {totalSlides}</div>
-    <div>
-      <h2 style={{fontFamily:F.d,fontSize:50,fontWeight:400,lineHeight:1.2,color:C.cream,margin:"0 0 32px"}}>{headline}</h2>
-      <div style={{width:48,height:2,background:C.copper,marginBottom:32}}/>
-      <p style={{fontFamily:F.b,fontWeight:300,fontSize:21,lineHeight:1.7,color:C.cream+"dd",margin:0}}>{body}</p>
+  return <div style={{width:1080,height:1350,background:"linear-gradient(175deg,#1C1C1C 0%,#2A2118 100%)",display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"72px 80px",position:"relative"}}>
+    <div style={brandOverlay}/>
+    <div style={{position:"relative",zIndex:2}}><div style={{fontFamily:F.b,fontWeight:300,fontSize:13,letterSpacing:".3em",color:"rgba(222,211,191,0.2)"}}>{slideNumber} / {totalSlides}</div></div>
+    <div style={{position:"relative",zIndex:2}}>
+      <h2 style={{fontFamily:F.d,fontSize:48,fontWeight:300,lineHeight:1.2,color:"#EDE5D8",margin:"0 0 28px"}}>{headline}</h2>
+      <div style={{...copperLine(48),margin:"0 0 28px"}}/>
+      <p style={{fontFamily:F.b,fontWeight:300,fontSize:19,lineHeight:1.8,color:"rgba(222,211,191,0.5)",margin:0,maxWidth:800}}>{body}</p>
     </div>
-    <div style={{fontFamily:F.b,fontWeight:300,fontSize:14,letterSpacing:".25em",textTransform:"uppercase",color:C.stone}}>{footer||"Stokeshire Designer Doodles"}</div>
+    <div style={{position:"relative",zIndex:2,fontFamily:F.b,fontWeight:300,fontSize:13,letterSpacing:".3em",textTransform:"uppercase",color:"rgba(222,211,191,0.2)"}}>{footer||"Stokeshire Designer Doodles"}</div>
   </div>
 }
 function SocCtaCard({headline,subtitle,ctaText,url}){
-  return <div style={{width:1080,height:1350,background:C.charcoal,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",position:"relative"}}>
-    <div style={{textAlign:"center",padding:"80px 72px"}}>
-      <div style={{width:60,height:2,background:C.copper,margin:"0 auto 48px"}}/>
-      <h2 style={{fontFamily:F.d,fontSize:58,fontWeight:400,lineHeight:1.2,color:C.cream,margin:"0 0 28px"}}>{headline}</h2>
-      {subtitle&&<p style={{fontFamily:F.b,fontWeight:300,fontSize:22,lineHeight:1.6,color:C.stone,margin:"0 0 48px",maxWidth:650}}>{subtitle}</p>}
-      <div style={{width:60,height:2,background:C.copper,margin:"0 auto 48px"}}/>
-      {ctaText&&<div style={{display:"inline-block",padding:"18px 56px",border:`1.5px solid ${C.copper}`,borderRadius:2,fontFamily:F.b,fontWeight:400,fontSize:16,letterSpacing:".25em",textTransform:"uppercase",color:C.copper}}>{ctaText}</div>}
-      {url&&<p style={{fontFamily:F.b,fontWeight:300,fontSize:15,color:C.stone,marginTop:24,letterSpacing:".05em"}}>{url}</p>}
+  return <div style={{width:1080,height:1350,background:"linear-gradient(175deg,#1C1C1C 0%,#2A2118 50%,#1C1C1C 100%)",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",position:"relative"}}>
+    <div style={brandOverlay}/>
+    <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 50%, rgba(173,122,40,0.04) 0%, transparent 50%)"}}/>
+    <div style={cornerAccent("tl")}/><div style={cornerAccent("tr")}/><div style={cornerAccent("bl")}/><div style={cornerAccent("br")}/>
+    <div style={{textAlign:"center",padding:"80px 80px",position:"relative",zIndex:2}}>
+      <div style={copperLine(60)}/>
+      <h2 style={{fontFamily:F.d,fontSize:52,fontWeight:300,lineHeight:1.2,color:"#EDE5D8",margin:"52px 0 24px"}}>{headline}</h2>
+      {subtitle&&<p style={{fontFamily:F.b,fontWeight:300,fontSize:20,lineHeight:1.65,color:"rgba(222,211,191,0.4)",margin:"0 0 48px",maxWidth:650}}>{subtitle}</p>}
+      <div style={copperLine(60)}/>
+      {ctaText&&<div style={{display:"inline-block",marginTop:48,padding:"16px 52px",border:"1px solid rgba(173,122,40,0.35)",borderRadius:1,fontFamily:F.b,fontWeight:300,fontSize:14,letterSpacing:".3em",textTransform:"uppercase",color:C.copper,background:"rgba(173,122,40,0.04)"}}>{ctaText}</div>}
+      {url&&<p style={{fontFamily:F.b,fontWeight:300,fontSize:14,color:"rgba(222,211,191,0.2)",marginTop:20,letterSpacing:".08em"}}>{url}</p>}
     </div>
-    <div style={socFoot}>Stokeshire Designer Doodles</div>
+    <div style={{...socFoot,color:"rgba(222,211,191,0.15)"}}>Stokeshire Designer Doodles</div>
   </div>
 }
+
 const SOC_CARDS={"editorial-dark":SocEditorialDark,"statement-cream":SocStatementCream,"split-editorial":SocSplitEditorial,"stat-card":SocStatCard,"carousel-text":SocCarouselText,"cta-card":SocCtaCard};
 
 // ═══ BLOG IMAGE LIBRARY ═══
@@ -564,7 +587,7 @@ export default function ContentEngine(){
     try{
       const{toPng}=await import("https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/+esm");
       const dataUrl=await toPng(socRef.current,{width:1080,height:1350,pixelRatio:1,style:{transform:"none",transformOrigin:"top left"}});
-      const a=document.createElement("a");a.download=`stokeshire-slide-${socActive+1}.png`;a.href=dataUrl;a.click();
+      const a=document.createElement("a");const dn=new Date().toISOString().slice(0,10);const sl=socUrl?socUrl.split("/").pop()?.replace(/[^a-z0-9-]/gi,""):"carousel";a.download=`${dn}_${sl}_${String(socActive+1).padStart(2,"0")}.png`;a.href=dataUrl;a.click();
       setSocToast("PNG downloaded");setTimeout(()=>setSocToast(null),2500);
     }catch(e){console.error(e);setSocToast("Export failed - use screenshot");setTimeout(()=>setSocToast(null),3000)}
   },[socActive]);
@@ -592,7 +615,7 @@ export default function ContentEngine(){
         await new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(ok,200))));
         const dataUrl=await toPng(socRef.current,{width:1080,height:1350,pixelRatio:1,style:{transform:"none",transformOrigin:"top left"}});
         const base64=dataUrl.split(",")[1];
-        await driveUpload(`slide-${i+1}.png`,base64,folder.id);
+        await driveUpload(`${String(i+1).padStart(2,"0")}_slide.png`,base64,folder.id);
       }
 
       // Upload caption as text file
@@ -632,7 +655,7 @@ export default function ContentEngine(){
         setSocTpl(s.template);setSocProps({...SOC_DEFAULTS[s.template],...s.props});setSocActive(i);
         await new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(ok,200))));
         const dataUrl=await toPng(socRef.current,{width:1080,height:1350,pixelRatio:1,style:{transform:"none",transformOrigin:"top left"}});
-        const a=document.createElement("a");a.download=`stokeshire-slide-${i+1}.png`;a.href=dataUrl;a.click();
+        const a=document.createElement("a");const dn=new Date().toISOString().slice(0,10);const sl=socUrl?socUrl.split("/").pop()?.replace(/[^a-z0-9-]/gi,""):"carousel";a.download=`${dn}_${sl}_${String(i+1).padStart(2,"0")}.png`;a.href=dataUrl;a.click();
         await new Promise(ok=>setTimeout(ok,300));
       }
       setSocStatus("");setSocToast("All "+socCarousel.slides.length+" slides downloaded");setTimeout(()=>setSocToast(null),3000);
@@ -1404,7 +1427,7 @@ export default function ContentEngine(){
 
       <div style={{padding:"14px 32px",borderTop:`1px solid ${C.warmGray}`,display:"flex",justifyContent:"space-between"}}>
         <span style={{fontSize:11,color:C.stone}}>Stokeshire Designer Doodles · DATCP #514401-DS</span>
-        <span style={{fontSize:11,color:C.stone}}>Content Engine v6 · Voice Library · Dual-AI Review · Social Studio+ · Schema Generator · Memory Bank</span>
+        <span style={{fontSize:11,color:C.stone}}>Content Engine v7 · Voice Library · Dual-AI Review · Social Studio+ · Schema Generator · Memory Bank</span>
       </div>
       <div style={{position:"fixed",bottom:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${C.copper},${C.copperLight},${C.copper})`,zIndex:999}}/>
     </div>
