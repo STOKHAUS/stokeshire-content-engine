@@ -114,10 +114,39 @@ export default async function handler(req, res) {
           throw new Error(`Failed to insert record: ${insertResponse.statusText}`);
         }
 
+        // Auto-post to Pinterest "Blog Posts" board
+        let pinResult = null;
+        try {
+          const pinterestResponse = await fetch(
+            `${process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL : 'http://localhost:3000'}/api/pinterest-post`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-webhook-secret': webhookSecret,
+              },
+              body: JSON.stringify({
+                blog_url: item.url,
+                blog_title: item.title,
+              }),
+            }
+          );
+          if (pinterestResponse.ok) {
+            const pinData = await pinterestResponse.json();
+            pinResult = { pin_id: pinData.pin_id, pin_url: pinData.pin_url };
+          } else {
+            const errData = await pinterestResponse.json();
+            pinResult = { error: errData.error || 'Pinterest post failed' };
+          }
+        } catch (pinError) {
+          pinResult = { error: pinError.message };
+        }
+
         results.processedItems.push({
           url: item.url,
           title: item.title,
           status: 'success',
+          pinterest: pinResult,
         });
       } catch (error) {
         results.errors.push({
