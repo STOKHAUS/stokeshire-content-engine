@@ -133,7 +133,7 @@ function SocStatementCream({quote,attribution,divider}){
     <div style={{...brandOverlay,opacity:.025}}/>
     <div style={cornerAccent("tl")}/><div style={cornerAccent("tr")}/><div style={cornerAccent("bl")}/><div style={cornerAccent("br")}/>
     <div style={{textAlign:"center",padding:"100px 96px",maxWidth:920,position:"relative"}}>
-      <div style={{fontFamily:F.d,fontSize:120,fontWeight:300,color:"rgba(173,122,40,0.08)",position:"absolute",top:40,left:"50%",transform:"translateX(-50%)",lineHeight:1}}>\u201C</div>
+      <div style={{fontFamily:F.d,fontSize:120,fontWeight:300,color:"rgba(173,122,40,0.08)",position:"absolute",top:40,left:"50%",transform:"translateX(-50%)",lineHeight:1}}>{"“"}</div>
       {divider&&<div style={{...copperLine(60),margin:"0 auto 56px"}}/>}
       <blockquote style={{fontFamily:F.d,fontSize:38,fontWeight:300,fontStyle:"italic",lineHeight:1.6,color:C.ink,margin:"0 0 48px"}}>{quote}</blockquote>
       {divider&&<div style={{...copperLine(60),margin:"0 auto 40px"}}/>}
