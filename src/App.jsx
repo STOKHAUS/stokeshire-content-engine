@@ -1193,7 +1193,7 @@ export default function ContentEngine(){
 
               {/* Right: Caption + Export */}
               <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                {socCarousel&&socCaption&&<Card>
+                {socCarousel&&<Card>
                   <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".15em",textTransform:"uppercase",marginBottom:8}}>Generated Caption</div>
                   <textarea value={socCaption} onChange={e=>setSocCaption(e.target.value)} rows={7} style={{...is,fontSize:12,resize:"vertical"}}/>
                   <Btn onClick={async()=>{try{await navigator.clipboard.writeText(socCaption);setSocToast("Caption copied");setTimeout(()=>setSocToast(null),2500)}catch{setSocToast("Copy failed")}}} sx={{marginTop:8,fontSize:10,padding:"8px 14px"}}>Copy Caption</Btn>
@@ -1205,7 +1205,7 @@ export default function ContentEngine(){
                   <Btn onClick={async()=>{try{await navigator.clipboard.writeText((socCaption||"")+"\n\n.\n.\n.\n\n"+socHashtags);setSocToast("Copied caption + hashtags");setTimeout(()=>setSocToast(null),2500)}catch{}}} v="secondary" sx={{marginTop:8,fontSize:10,padding:"8px 14px",width:"100%"}}>Copy All</Btn>
                 </Card>
 
-                {socCaption&&<Card>
+                {socCarousel&&<Card>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                     <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".15em",textTransform:"uppercase"}}>Voiceover</div>
                     {voAudio&&<span style={{fontSize:10,color:C.success}}>Ready</span>}
