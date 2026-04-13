@@ -367,6 +367,10 @@ export default function ContentEngine(){
   const [socScale,setSocScale]=useState(0.32);
   const [socImgFilter,setSocImgFilter]=useState("All");
   const socRef=useRef(null);
+  // Voiceover
+  const [voAudio,setVoAudio]=useState(null);
+  const [voLoading,setVoLoading]=useState(false);
+  const voRef=useRef(null);
   // Schema Generator
   const [schType,setSchType]=useState("blog");
   const [schFields,setSchFields]=useState({});
@@ -678,6 +682,21 @@ export default function ContentEngine(){
     }
     setSocToast("Image inserted");setTimeout(()=>setSocToast(null),2000);
   },[socTpl,socCarousel,socActive]);
+
+  // ═══ VOICEOVER ═══
+  const voGenerate=useCallback(async()=>{
+    if(!socCaption?.trim())return;
+    setVoLoading(true);
+    try{
+      const r=await fetch("/api/elevenlabs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:socCaption.trim()})});
+      if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||`ElevenLabs ${r.status}`)}
+      const d=await r.json();
+      const audioUrl=`data:audio/mpeg;base64,${d.audio_base64}`;
+      setVoAudio(audioUrl);
+      setSocToast(`Voiceover generated (${d.char_count} chars)`);setTimeout(()=>setSocToast(null),3000);
+    }catch(e){setSocToast("Voiceover failed: "+e.message);setTimeout(()=>setSocToast(null),4000)}
+    finally{setVoLoading(false)}
+  },[socCaption]);
 
   // ═══ SCHEMA GENERATOR ═══
   const SITE="https://www.wisconsindesignerdoodles.com";
@@ -1185,6 +1204,19 @@ export default function ContentEngine(){
                   <textarea value={socHashtags} onChange={e=>setSocHashtags(e.target.value)} rows={2} style={{...is,fontSize:11,resize:"vertical",color:C.slate}}/>
                   <Btn onClick={async()=>{try{await navigator.clipboard.writeText((socCaption||"")+"\n\n.\n.\n.\n\n"+socHashtags);setSocToast("Copied caption + hashtags");setTimeout(()=>setSocToast(null),2500)}catch{}}} v="secondary" sx={{marginTop:8,fontSize:10,padding:"8px 14px",width:"100%"}}>Copy All</Btn>
                 </Card>
+
+                {socCaption&&<Card>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".15em",textTransform:"uppercase"}}>Voiceover</div>
+                    {voAudio&&<span style={{fontSize:10,color:C.success}}>Ready</span>}
+                  </div>
+                  <Btn onClick={voGenerate} disabled={voLoading||!socCaption?.trim()} sx={{width:"100%",fontSize:11,marginBottom:8}}>{voLoading?"Generating voiceover...":"Generate Voiceover (James Voice)"}</Btn>
+                  {voAudio&&<div>
+                    <audio ref={voRef} src={voAudio} style={{width:"100%",height:36,borderRadius:6}} controls/>
+                    <Btn onClick={()=>{const a=document.createElement("a");const dn=new Date().toISOString().slice(0,10);const sl=socUrl?socUrl.split("/").pop()?.replace(/[^a-z0-9-]/gi,""):"voiceover";a.download=`${dn}_${sl}_voiceover.mp3`;a.href=voAudio;a.click()}} v="secondary" sx={{width:"100%",fontSize:10,marginTop:6}}>Download MP3</Btn>
+                  </div>}
+                  <div style={{fontSize:10,color:C.stone,marginTop:6}}>Uses your cloned voice via ElevenLabs. Caption text becomes the narration.</div>
+                </Card>}
 
                 <Card>
                   <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".15em",textTransform:"uppercase",marginBottom:8}}>Export</div>
