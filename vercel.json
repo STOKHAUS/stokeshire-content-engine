@@ -1,3 +1,9 @@
 {
-  "framework": "vite"
+  "framework": "vite",
+  "crons": [
+    {
+      "path": "/api/cron-blog",
+      "schedule": "0 8 * * *"
+    }
+  ]
 }
