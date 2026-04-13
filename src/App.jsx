@@ -186,7 +186,7 @@ function store(k,d){try{localStorage.setItem(k,JSON.stringify(d))}catch(e){conso
 function load(k,fb){try{const r=localStorage.getItem(k);return r?JSON.parse(r):fb}catch{return fb}}
 
 async function ai(msgs,opts={},retries=1){
-  const body={model:"claude-sonnet-4-20250514",max_tokens:8000,messages:msgs,...(opts.system?{system:opts.system}:{}),...(opts.tools?{tools:opts.tools}:{})};
+  const body={model:"claude-sonnet-4-20250514",max_tokens:8000,messages:msgs,...(opts.system?{system:opts.system}:{}),...(opts.tools?{tools:opts.tools}:{}),...(opts.mcp_servers?{mcp_servers:opts.mcp_servers}:{})};
   const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   if(!r.ok){
     const e=await r.json().catch(()=>({}));
@@ -196,6 +196,25 @@ async function ai(msgs,opts={},retries=1){
     }
     throw new Error(e.error?.message||`API ${r.status}`);
   }
+  return r.json();
+}
+
+// OpenAI dual-review (GPT-4o as second compliance reviewer)
+async function openaiReview(msgs,system){
+  const r=await fetch("/api/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({system,messages:msgs,model:"gpt-4o"})});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`OpenAI ${r.status}`)}
+  return r.json();
+}
+
+// Google Drive helpers
+async function driveCreateFolder(name,parentId){
+  const r=await fetch("/api/drive-folder",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,parentId})});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||"Folder creation failed")}
+  return r.json();
+}
+async function driveUpload(fileName,base64Data,folderId,mimeType="image/png"){
+  const r=await fetch("/api/drive-upload",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fileName,fileData:base64Data,mimeType,folderId})});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||"Upload failed")}
   return r.json();
 }
 function aiText(d){return d.content.filter(b=>b.type==="text").map(b=>b.text).join("\n")}
@@ -367,13 +386,24 @@ export default function ContentEngine(){
     setLoading(null);
   },[topic,kw,pillar,slug,brief,extra,memory]);
 
-  // Step 3: Compliance Review (Dual-AI)
+  // Step 3: Compliance Review (Dual-AI — Claude + GPT-4o)
   const doReview=useCallback(async()=>{
     setLoading("review");setErr(p=>({...p,review:null}));
     try{
-      const d=await ai([{role:"user",content:`Review this article draft for compliance, brand voice, SEO structure, and factual accuracy:\n\n${article}`}],{system:EDITOR_PROMPT});
-      setReview(aiText(d));setStep(3);
-      store("stk-draft",{topic,kw,pillar,slug,brief,article,review:aiText(d),score:sc,ts:Date.now()});
+      // Claude review
+      const claudeD=await ai([{role:"user",content:`Review this article draft for compliance, brand voice, SEO structure, and factual accuracy:\n\n${article}`}],{system:EDITOR_PROMPT});
+      const claudeReview=aiText(claudeD);
+
+      // GPT-4o review (independent second opinion)
+      let gptReview="";
+      try{
+        const gptD=await openaiReview([{role:"user",content:`Review this article draft for compliance, brand voice, SEO structure, and factual accuracy:\n\n${article}`}],EDITOR_PROMPT);
+        gptReview=aiText(gptD);
+      }catch(e){gptReview=`GPT-4o review unavailable: ${e.message}\n(Add OPENAI_API_KEY to Vercel env vars to enable)`}
+
+      const combined=`═══ CLAUDE REVIEW ═══\n${claudeReview}\n\n═══ GPT-4o REVIEW ═══\n${gptReview}`;
+      setReview(combined);setStep(3);
+      store("stk-draft",{topic,kw,pillar,slug,brief,article,review:combined,score:sc,ts:Date.now()});
     }catch(e){setErr(p=>({...p,review:e.message}))}
     setLoading(null);
   },[article]);
@@ -478,6 +508,43 @@ export default function ContentEngine(){
       setSocToast("PNG downloaded");setTimeout(()=>setSocToast(null),2500);
     }catch(e){console.error(e);setSocToast("Export failed - use screenshot");setTimeout(()=>setSocToast(null),3000)}
   },[socActive]);
+
+  // Export all slides + caption to Google Drive
+  const DRIVE_PARENT_FOLDER=load("stk-drive-folder",""); // Set in Settings
+  const socExportDrive=useCallback(async()=>{
+    if(!socCarousel?.slides?.length||!socRef.current)return;
+    if(!DRIVE_PARENT_FOLDER){setSocToast("Set Drive folder ID in Settings first");setTimeout(()=>setSocToast(null),3000);return}
+    setSocLoading(true);setSocStatus("Creating Drive folder...");
+    try{
+      const{toPng}=await import("https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/+esm");
+      // Create subfolder for this carousel
+      const date=new Date().toISOString().slice(0,10);
+      const title=socCarousel.slides[0]?.props?.headline||"Carousel";
+      const folder=await driveCreateFolder(`${date} - ${title}`,DRIVE_PARENT_FOLDER);
+
+      // Export each slide
+      for(let i=0;i<socCarousel.slides.length;i++){
+        setSocStatus(`Exporting slide ${i+1}/${socCarousel.slides.length}...`);
+        // Switch to this slide
+        const s=socCarousel.slides[i];
+        setSocTpl(s.template);setSocProps({...SOC_DEFAULTS[s.template],...s.props});setSocActive(i);
+        // Wait for render
+        await new Promise(ok=>setTimeout(ok,500));
+        const dataUrl=await toPng(socRef.current,{width:1080,height:1350,pixelRatio:1,style:{transform:"none",transformOrigin:"top left"}});
+        const base64=dataUrl.split(",")[1];
+        await driveUpload(`slide-${i+1}.png`,base64,folder.id);
+      }
+
+      // Upload caption as text file
+      setSocStatus("Uploading caption...");
+      const captionText=socCaption+"\n\n.\n.\n.\n\n"+socHashtags;
+      const captionB64=btoa(unescape(encodeURIComponent(captionText)));
+      await driveUpload("caption.txt",captionB64,folder.id,"text/plain");
+
+      setSocStatus("");setSocToast("Exported to Drive");setTimeout(()=>setSocToast(null),3000);
+    }catch(e){console.error(e);setSocStatus("");setSocToast("Drive export failed: "+e.message);setTimeout(()=>setSocToast(null),4000)}
+    finally{setSocLoading(false)}
+  },[socCarousel,socCaption,socHashtags,DRIVE_PARENT_FOLDER]);
 
   const TABS=[{id:"intel",icon:"🔍",label:"Keyword Intel"},{id:"studio",icon:"✍️",label:"Content Studio"},{id:"pipeline",icon:"📋",label:"Pipeline"},{id:"social",icon:"📸",label:"Social Studio"},{id:"settings",icon:"⚙️",label:"Settings"}];
   const STEPS_L=["Topic","Research","Draft","Review","Deploy"];
@@ -779,8 +846,11 @@ export default function ContentEngine(){
 
                 <Card>
                   <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".15em",textTransform:"uppercase",marginBottom:8}}>Export</div>
-                  <Btn onClick={socDownload} v="secondary" sx={{width:"100%",fontSize:11}}>Download PNG (1080 x 1350)</Btn>
-                  <div style={{fontSize:10,color:C.stone,marginTop:8,lineHeight:1.5}}>Exports at exact Instagram dimensions. Fallback: Cmd+Shift+4.</div>
+                  <Btn onClick={socDownload} v="secondary" sx={{width:"100%",fontSize:11,marginBottom:8}}>Download PNG (1080 x 1350)</Btn>
+                  {socCarousel&&socCarousel.slides?.length>1&&<Btn onClick={socExportDrive} disabled={socLoading} sx={{width:"100%",fontSize:11,marginBottom:8}}>
+                    {socLoading?"Exporting...":"Export All to Google Drive"}
+                  </Btn>}
+                  <div style={{fontSize:10,color:C.stone,marginTop:4,lineHeight:1.5}}>Download exports current slide. Drive export saves all slides + caption to a folder.</div>
                 </Card>
 
                 <Card sx={{background:C.ink,border:"none"}}>
@@ -805,46 +875,62 @@ export default function ContentEngine(){
         {tab==="settings"&&(
           <div className="fi">
             <div style={{fontFamily:F.d,fontSize:22,fontWeight:600,color:C.ink,marginBottom:8}}>Integration Settings</div>
-            <div style={{fontSize:13,color:C.slate,marginBottom:24}}>Add API keys to unlock additional integrations. Keys are stored locally in your browser.</div>
+            <div style={{fontSize:13,color:C.slate,marginBottom:24}}>API keys are stored in Vercel environment variables (server-side, secure). Browser settings stored locally.</div>
 
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+            <div style={{fontFamily:F.d,fontSize:18,fontWeight:600,color:C.ink,marginBottom:12}}>Server-Side (Vercel Env Vars)</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:28}}>
               {[
-                {key:"perplexityKey",label:"Perplexity API Key",desc:"Enhanced competitor research with sourced, structured answers. Get key at perplexity.ai/settings/api",status:settings.perplexityKey?"Connected":"Not configured"},
-                {key:"openaiKey",label:"OpenAI API Key",desc:"Dual-AI compliance editing — GPT-4 as a second reviewer. Get key at platform.openai.com/api-keys",status:settings.openaiKey?"Connected":"Not configured"},
-                {key:"sqspKey",label:"Squarespace API Key",desc:"Direct publishing — articles go straight to Squarespace drafts. Get key at developers.squarespace.com",status:settings.sqspKey?"Connected":"Not configured"},
-                {key:"ahrefsKey",label:"Ahrefs API Key",desc:"Deep keyword intelligence — search volume, difficulty, SERP features. Get key at ahrefs.com/api",status:settings.ahrefsKey?"Connected":"Not configured"},
-              ].map(cfg=>(
-                <Card key={cfg.key}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                    <div style={{fontSize:14,fontWeight:600,color:C.ink}}>{cfg.label}</div>
-                    <Badge color={settings[cfg.key]?C.success:C.stone}>{cfg.status}</Badge>
-                  </div>
-                  <div style={{fontSize:12,color:C.slate,marginBottom:12}}>{cfg.desc}</div>
-                  <input value={settings[cfg.key]} onChange={e=>{const s={...settings,[cfg.key]:e.target.value};saveSettings(s)}} style={{...is,fontSize:12}} placeholder="Paste API key here..." type="password"/>
+                {name:"Claude API",icon:"🧠",desc:"Drafting, review, carousel generation",key:"ANTHROPIC_API_KEY",status:"Active"},
+                {name:"OpenAI GPT-4o",icon:"🤖",desc:"Dual-AI compliance review",key:"OPENAI_API_KEY",status:"Active"},
+                {name:"Google Drive",icon:"📁",desc:"Social Studio carousel export",key:"GOOGLE_SERVICE_ACCOUNT_JSON",status:"Needs Setup"},
+              ].map(i=>(
+                <Card key={i.name} sx={{padding:"14px 18px"}}>
+                  <div style={{fontSize:20,marginBottom:6}}>{i.icon}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:C.ink}}>{i.name}</div>
+                  <div style={{fontSize:11,color:C.slate,marginBottom:8}}>{i.desc}</div>
+                  <div style={{fontSize:10,color:C.stone}}>Env: <code style={{fontSize:10}}>{i.key}</code></div>
+                  <Badge color={i.status==="Active"?C.success:C.warning}>{i.status}</Badge>
                 </Card>
               ))}
             </div>
 
-            <div style={{marginTop:32}}>
-              <div style={{fontFamily:F.d,fontSize:18,fontWeight:600,color:C.ink,marginBottom:12}}>Connected Integrations (Active)</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
-                {[
-                  {name:"Claude API",icon:"🧠",desc:"Article drafting + compliance review",status:"Active"},
-                  {name:"Search Console",icon:"📊",desc:"Live keyword data via published CSV",status:"Active"},
-                  {name:"Asana",icon:"✅",desc:"Auto-create team tasks on deploy",status:"Active"},
-                  {name:"Gmail",icon:"📧",desc:"Review notification drafts",status:"Active"},
-                  {name:"Canva",icon:"🎨",desc:"Auto-generate blog headers",status:"Available (MCP)"},
-                  {name:"ElevenLabs",icon:"🔊",desc:"Audio article generation",status:"Available (MCP)"},
-                  {name:"Google Drive",icon:"📁",desc:"Auto-save drafts to team folder",status:"Available (MCP)"},
-                  {name:"Google Calendar",icon:"📅",desc:"Block review time on Fridays",status:"Available (MCP)"},
-                ].map(i=>(
-                  <Card key={i.name} sx={{padding:"12px 16px"}}>
-                    <div style={{fontSize:18,marginBottom:4}}>{i.icon}</div>
-                    <div style={{fontSize:12,fontWeight:600,color:C.ink}}>{i.name}</div>
-                    <div style={{fontSize:10,color:C.slate,marginBottom:6}}>{i.desc}</div>
-                    <Badge color={i.status==="Active"?C.success:C.accent1}>{i.status}</Badge>
-                  </Card>
-                ))}
+            <div style={{fontFamily:F.d,fontSize:18,fontWeight:600,color:C.ink,marginBottom:12}}>Data Sources (No Auth Required)</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:28}}>
+              {[
+                {name:"Search Console CSV",icon:"📊",desc:"Live keyword data via published spreadsheet",status:"Active"},
+                {name:"Web Search",icon:"🔍",desc:"Competitor research via Claude tools",status:"Active"},
+                {name:"Blog Fetching",icon:"📰",desc:"Social Studio reads published posts",status:"Active"},
+              ].map(i=>(
+                <Card key={i.name} sx={{padding:"14px 18px"}}>
+                  <div style={{fontSize:20,marginBottom:6}}>{i.icon}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:C.ink}}>{i.name}</div>
+                  <div style={{fontSize:11,color:C.slate,marginBottom:8}}>{i.desc}</div>
+                  <Badge color={C.success}>{i.status}</Badge>
+                </Card>
+              ))}
+            </div>
+
+            <div style={{fontFamily:F.d,fontSize:18,fontWeight:600,color:C.ink,marginBottom:12}}>Browser Settings</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+              <Card>
+                <div style={{fontSize:14,fontWeight:600,color:C.ink,marginBottom:8}}>Google Drive Export Folder</div>
+                <div style={{fontSize:12,color:C.slate,marginBottom:12}}>The Drive folder ID where Social Studio exports carousels. Find it in the folder URL after /folders/</div>
+                <input value={load("stk-drive-folder","")} onChange={e=>{store("stk-drive-folder",e.target.value)}} style={is} placeholder="e.g. 1jVhTAmaOPYIRiO1qcn6DBjwVXmG7l-Rx"/>
+              </Card>
+              <Card>
+                <div style={{fontSize:14,fontWeight:600,color:C.ink,marginBottom:8}}>Ahrefs API Key (Future)</div>
+                <div style={{fontSize:12,color:C.slate,marginBottom:12}}>Deep keyword intelligence. Not yet wired - saved for when you enable at ahrefs.com/api</div>
+                <input value={settings.ahrefsKey||""} onChange={e=>{const s={...settings,ahrefsKey:e.target.value};saveSettings(s)}} style={is} placeholder="Not yet active" type="password"/>
+              </Card>
+            </div>
+
+            <div style={{marginTop:28,padding:16,background:C.creamDark,borderRadius:8}}>
+              <div style={{fontSize:12,fontWeight:600,color:C.ink,marginBottom:8}}>Future Integrations (Roadmap)</div>
+              <div style={{fontSize:11,color:C.slate,lineHeight:1.7}}>
+                <div>Ahrefs - keyword difficulty + search volume enrichment for Intel tab</div>
+                <div>Asana MCP - auto-create tasks on article deploy (requires MCP auth)</div>
+                <div>Gmail MCP - review notifications (requires MCP auth)</div>
+                <div>Squarespace API - direct blog publishing (no API available yet)</div>
               </div>
             </div>
           </div>
