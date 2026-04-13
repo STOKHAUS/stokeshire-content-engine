@@ -300,6 +300,12 @@ export default function ContentEngine(){
   const [socToast,setSocToast]=useState(null);
   const [socScale,setSocScale]=useState(0.32);
   const socRef=useRef(null);
+  // Schema Generator
+  const [schType,setSchType]=useState("blog");
+  const [schFields,setSchFields]=useState({});
+  const [schOutput,setSchOutput]=useState("");
+  const [schCopied,setSchCopied]=useState(false);
+  const [schFaqs,setSchFaqs]=useState([{q:"",a:""}]);
 
   useEffect(()=>{
     setPipeline(load("stk-pipeline",[]));
@@ -546,7 +552,178 @@ export default function ContentEngine(){
     finally{setSocLoading(false)}
   },[socCarousel,socCaption,socHashtags,DRIVE_PARENT_FOLDER]);
 
-  const TABS=[{id:"intel",icon:"🔍",label:"Keyword Intel"},{id:"studio",icon:"✍️",label:"Content Studio"},{id:"pipeline",icon:"📋",label:"Pipeline"},{id:"social",icon:"📸",label:"Social Studio"},{id:"settings",icon:"⚙️",label:"Settings"}];
+  // ═══ SCHEMA GENERATOR ═══
+  const SITE="https://www.wisconsindesignerdoodles.com";
+  const schPageTypes=[
+    {id:"blog",name:"Blog Post",desc:"FAQPage schema for blog posts (supplements Squarespace auto Article)"},
+    {id:"puppy",name:"Puppy Listing",desc:"Product schema with availability toggle for individual puppy pages"},
+    {id:"litter",name:"Litter Page",desc:"ItemList schema linking to individual puppy pages"},
+    {id:"breed",name:"Breed Pillar",desc:"WebPage + FAQPage + Dataset in @graph for breed authority pages"},
+  ];
+
+  const schResetFields=useCallback((type)=>{
+    setSchOutput("");setSchCopied(false);
+    if(type==="blog"){setSchFields({title:"",slug:"",description:"",datePublished:"",imageUrl:""});setSchFaqs([{q:"",a:""}])}
+    else if(type==="puppy"){setSchFields({name:"",slug:"",breed:"",gender:"",description:"",imageUrl:"",sku:"",status:"InStock",litterUrl:""})}
+    else if(type==="litter"){setSchFields({title:"",slug:"",description:"",damName:"",sireName:"",imageUrl:"",puppies:JSON.stringify([{name:"Puppy 1",url:"/puppies-for-sale/puppy-1"},{name:"Puppy 2",url:"/puppies-for-sale/puppy-2"}],null,2)})}
+    else if(type==="breed"){setSchFields({title:"",slug:"",description:"",breedName:"",imageUrl:""});setSchFaqs([{q:"",a:""}])}
+  },[]);
+
+  useEffect(()=>{schResetFields(schType)},[schType]);
+
+  const schGenerate=useCallback(()=>{
+    const f=schFields;const base=SITE;
+    let json="";
+
+    if(schType==="blog"){
+      const faqs=schFaqs.filter(fq=>fq.q.trim()&&fq.a.trim());
+      if(!faqs.length){setSchOutput("// Add at least one FAQ with both question and answer");return}
+      json=JSON.stringify({
+        "@context":"https://schema.org",
+        "@type":"FAQPage",
+        "@id":`${base}${f.slug||"/blog/post"}/#faqpage`,
+        "url":`${base}${f.slug||"/blog/post"}/`,
+        "name":f.title||"FAQ",
+        "mainEntity":faqs.map(fq=>({"@type":"Question","name":fq.q,"acceptedAnswer":{"@type":"Answer","text":fq.a}})),
+        "inLanguage":"en-US"
+      },null,2);
+    }
+
+    else if(schType==="puppy"){
+      json=JSON.stringify({
+        "@context":"https://schema.org",
+        "@graph":[
+          {
+            "@type":"WebPage",
+            "@id":`${base}${f.slug||"/puppies-for-sale/puppy"}/#webpage`,
+            "url":`${base}${f.slug||"/puppies-for-sale/puppy"}/`,
+            "name":f.name||"Puppy",
+            "description":f.description||"",
+            "isPartOf":{"@id":`${base}/#website`},
+            "inLanguage":"en-US"
+          },
+          {
+            "@type":"Product",
+            "@id":`${base}${f.slug||"/puppies-for-sale/puppy"}/#product`,
+            "name":f.name||"Puppy",
+            "description":f.description||"",
+            "image":f.imageUrl?[f.imageUrl]:[],
+            "sku":f.sku||"",
+            "brand":{"@type":"Brand","name":"Stokeshire Designer Doodles"},
+            "category":f.breed||"Designer Doodle",
+            "offers":{
+              "@type":"Offer",
+              "url":`${base}${f.slug||"/puppies-for-sale/puppy"}/`,
+              "availability":`https://schema.org/${f.status==="SoldOut"?"SoldOut":"InStock"}`,
+              "itemCondition":"https://schema.org/NewCondition",
+              "seller":{"@id":`${base}/#business`}
+            },
+            "additionalProperty":[
+              {"@type":"PropertyValue","name":"Gender","value":f.gender||""},
+              {"@type":"PropertyValue","name":"Breed","value":f.breed||""}
+            ]
+          },
+          {
+            "@type":"BreadcrumbList",
+            "@id":`${base}${f.slug||"/puppies-for-sale/puppy"}/#breadcrumb`,
+            "itemListElement":[
+              {"@type":"ListItem","position":1,"name":"Home","item":`${base}/`},
+              {"@type":"ListItem","position":2,"name":"Available Puppies","item":`${base}/available-puppies/`},
+              {"@type":"ListItem","position":3,"name":f.name||"Puppy","item":`${base}${f.slug||"/puppies-for-sale/puppy"}/`}
+            ]
+          }
+        ]
+      },null,2);
+    }
+
+    else if(schType==="litter"){
+      let puppies=[];
+      try{puppies=JSON.parse(f.puppies||"[]")}catch{puppies=[]}
+      json=JSON.stringify({
+        "@context":"https://schema.org",
+        "@graph":[
+          {
+            "@type":"WebPage",
+            "@id":`${base}${f.slug||"/puppies-for-sale/litter"}/#webpage`,
+            "url":`${base}${f.slug||"/puppies-for-sale/litter"}/`,
+            "name":f.title||"Litter Page",
+            "description":f.description||"",
+            "isPartOf":{"@id":`${base}/#website`},
+            "inLanguage":"en-US"
+          },
+          {
+            "@type":"ItemList",
+            "@id":`${base}${f.slug||"/puppies-for-sale/litter"}/#itemlist`,
+            "name":f.title||"Litter",
+            "description":f.description||"",
+            "numberOfItems":puppies.length,
+            "itemListElement":puppies.map((p,i)=>({"@type":"ListItem","position":i+1,"name":p.name||`Puppy ${i+1}`,"url":`${base}${p.url||""}`}))
+          },
+          {
+            "@type":"BreadcrumbList",
+            "@id":`${base}${f.slug||"/puppies-for-sale/litter"}/#breadcrumb`,
+            "itemListElement":[
+              {"@type":"ListItem","position":1,"name":"Home","item":`${base}/`},
+              {"@type":"ListItem","position":2,"name":"Available Puppies","item":`${base}/available-puppies/`},
+              {"@type":"ListItem","position":3,"name":f.title||"Litter","item":`${base}${f.slug||"/puppies-for-sale/litter"}/`}
+            ]
+          }
+        ]
+      },null,2);
+    }
+
+    else if(schType==="breed"){
+      const faqs=schFaqs.filter(fq=>fq.q.trim()&&fq.a.trim());
+      json=JSON.stringify({
+        "@context":"https://schema.org",
+        "@graph":[
+          {
+            "@type":"WebPage",
+            "@id":`${base}${f.slug||"/breed"}/#webpage`,
+            "url":`${base}${f.slug||"/breed"}/`,
+            "name":f.title||"Breed Page",
+            "description":f.description||"",
+            "isPartOf":{"@id":`${base}/#website`},
+            "about":{"@id":`${base}${f.slug||"/breed"}/#dataset`},
+            "inLanguage":"en-US"
+          },
+          ...(faqs.length?[{
+            "@type":"FAQPage",
+            "@id":`${base}${f.slug||"/breed"}/#faqpage`,
+            "mainEntity":faqs.map(fq=>({"@type":"Question","name":fq.q,"acceptedAnswer":{"@type":"Answer","text":fq.a}}))
+          }]:[]),
+          {
+            "@type":"Dataset",
+            "@id":`${base}${f.slug||"/breed"}/#dataset`,
+            "name":`${f.breedName||"Breed"} - Breed Information`,
+            "description":`Comprehensive breed data for ${f.breedName||"this breed"} from Stokeshire Designer Doodles`,
+            "creator":{"@id":`${base}/#business`},
+            "license":"https://creativecommons.org/licenses/by-nc-nd/4.0/",
+            "inLanguage":"en-US"
+          },
+          {
+            "@type":"BreadcrumbList",
+            "@id":`${base}${f.slug||"/breed"}/#breadcrumb`,
+            "itemListElement":[
+              {"@type":"ListItem","position":1,"name":"Home","item":`${base}/`},
+              {"@type":"ListItem","position":2,"name":f.breedName||"Breed","item":`${base}${f.slug||"/breed"}/`}
+            ]
+          }
+        ]
+      },null,2);
+    }
+
+    const wrapped=`<script type="application/ld+json">\n${json}\n</script>`;
+    setSchOutput(wrapped);
+  },[schType,schFields,schFaqs]);
+
+  const schCopy=useCallback(()=>{
+    if(!schOutput)return;
+    navigator.clipboard.writeText(schOutput);
+    setSchCopied(true);setTimeout(()=>setSchCopied(false),2500);
+  },[schOutput]);
+
+  const TABS=[{id:"intel",icon:"🔍",label:"Keyword Intel"},{id:"studio",icon:"✍️",label:"Content Studio"},{id:"pipeline",icon:"📋",label:"Pipeline"},{id:"social",icon:"📸",label:"Social Studio"},{id:"schema",icon:"🏗️",label:"Schema"},{id:"settings",icon:"⚙️",label:"Settings"}];
   const STEPS_L=["Topic","Research","Draft","Review","Deploy"];
   const ST={drafted:{l:"Drafted",c:C.accent1},review:{l:"In Review",c:C.warning},approved:{l:"Approved",c:C.success},published:{l:"Published",c:C.copper}};
 
@@ -871,6 +1048,151 @@ export default function ContentEngine(){
           </div>
         )}
 
+        {/* ═══ SCHEMA GENERATOR ═══ */}
+        {tab==="schema"&&(
+          <div className="fi">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <div>
+                <div style={{fontFamily:F.d,fontSize:22,fontWeight:600,color:C.ink}}>Schema Generator</div>
+                <div style={{fontSize:12,color:C.slate,marginTop:4}}>Generate JSON-LD for Page Header Code Injection. References site-wide @id anchors automatically.</div>
+              </div>
+            </div>
+
+            <div style={{display:"grid",gridTemplateColumns:"280px 1fr",gap:24}}>
+              {/* Left: Type selector + Fields */}
+              <div>
+                <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".15em",textTransform:"uppercase",marginBottom:12}}>Page Type</div>
+                <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:24}}>
+                  {schPageTypes.map(t=>(
+                    <button key={t.id} onClick={()=>setSchType(t.id)} style={{textAlign:"left",padding:"12px 14px",borderRadius:6,border:schType===t.id?`2px solid ${C.copper}`:`1px solid ${C.warmGray}`,background:schType===t.id?C.white:"transparent",cursor:"pointer"}}>
+                      <div style={{fontSize:13,fontWeight:schType===t.id?600:400,color:C.ink}}>{t.name}</div>
+                      <div style={{fontSize:10,color:C.slate,lineHeight:1.4,marginTop:2}}>{t.desc}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".15em",textTransform:"uppercase",marginBottom:12}}>Fields</div>
+
+                {/* Dynamic fields based on type */}
+                {schType==="blog"&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  <div><label style={ls}>Post Title</label><input value={schFields.title||""} onChange={e=>setSchFields(p=>({...p,title:e.target.value}))} style={is} placeholder="Temperament Testing Puppies: Why It Works"/></div>
+                  <div><label style={ls}>URL Slug</label><input value={schFields.slug||""} onChange={e=>setSchFields(p=>({...p,slug:e.target.value}))} style={is} placeholder="/stokeshire-doodle-puppy-blog/post-slug"/></div>
+                  <div><label style={ls}>Description</label><input value={schFields.description||""} onChange={e=>setSchFields(p=>({...p,description:e.target.value}))} style={is} placeholder="One-sentence summary"/></div>
+                  <div style={{marginTop:16}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <label style={{...ls,margin:0}}>FAQ Questions</label>
+                      <button onClick={()=>setSchFaqs(p=>[...p,{q:"",a:""}])} style={{background:"none",border:"none",color:C.copper,fontSize:11,cursor:"pointer",fontFamily:F.b,letterSpacing:".05em"}}>+ Add Question</button>
+                    </div>
+                    {schFaqs.map((fq,i)=>(
+                      <div key={i} style={{background:C.creamDark,borderRadius:6,padding:12,marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                          <span style={{fontSize:10,color:C.stone}}>Q{i+1}</span>
+                          {schFaqs.length>1&&<button onClick={()=>setSchFaqs(p=>p.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.danger,fontSize:11,cursor:"pointer"}}>Remove</button>}
+                        </div>
+                        <input value={fq.q} onChange={e=>{const u=[...schFaqs];u[i].q=e.target.value;setSchFaqs(u)}} style={{...is,fontSize:12,marginBottom:6}} placeholder="Question text (must match visible page content)"/>
+                        <textarea value={fq.a} onChange={e=>{const u=[...schFaqs];u[i].a=e.target.value;setSchFaqs(u)}} style={{...is,fontSize:12,resize:"vertical",minHeight:60}} placeholder="Answer text (600-1200 chars, must match page)"/>
+                      </div>
+                    ))}
+                  </div>
+                </div>}
+
+                {schType==="puppy"&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  <div><label style={ls}>Puppy Name</label><input value={schFields.name||""} onChange={e=>setSchFields(p=>({...p,name:e.target.value}))} style={is} placeholder="Emerald"/></div>
+                  <div><label style={ls}>URL Slug</label><input value={schFields.slug||""} onChange={e=>setSchFields(p=>({...p,slug:e.target.value}))} style={is} placeholder="/puppies-for-sale/emerald-bernedoodle-mavi-benny-2026"/></div>
+                  <div><label style={ls}>Breed</label><input value={schFields.breed||""} onChange={e=>setSchFields(p=>({...p,breed:e.target.value}))} style={is} placeholder="F1B Bernedoodle"/></div>
+                  <div><label style={ls}>Gender</label><select value={schFields.gender||""} onChange={e=>setSchFields(p=>({...p,gender:e.target.value}))} style={is}><option value="">Select</option><option>Female</option><option>Male</option></select></div>
+                  <div><label style={ls}>Description</label><textarea value={schFields.description||""} onChange={e=>setSchFields(p=>({...p,description:e.target.value}))} style={{...is,resize:"vertical",minHeight:60}} placeholder="Short personality summary"/></div>
+                  <div><label style={ls}>Image URL</label><input value={schFields.imageUrl||""} onChange={e=>setSchFields(p=>({...p,imageUrl:e.target.value}))} style={is} placeholder="https://images.squarespace-cdn.com/..."/></div>
+                  <div><label style={ls}>SKU</label><input value={schFields.sku||""} onChange={e=>setSchFields(p=>({...p,sku:e.target.value}))} style={is} placeholder="STK-EMERALD-260121-BND-MM-F-YLW-MAVI.BENNY-08"/></div>
+                  <div><label style={ls}>Availability</label><select value={schFields.status||"InStock"} onChange={e=>setSchFields(p=>({...p,status:e.target.value}))} style={is}><option value="InStock">Available (InStock)</option><option value="SoldOut">Placed (SoldOut)</option></select></div>
+                  <div><label style={ls}>Litter Page URL (optional)</label><input value={schFields.litterUrl||""} onChange={e=>setSchFields(p=>({...p,litterUrl:e.target.value}))} style={is} placeholder="/puppies-for-sale/mavi-benny-litter"/></div>
+                </div>}
+
+                {schType==="litter"&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  <div><label style={ls}>Litter Title</label><input value={schFields.title||""} onChange={e=>setSchFields(p=>({...p,title:e.target.value}))} style={is} placeholder="Mavi x Benny - F1B Bernedoodle Litter"/></div>
+                  <div><label style={ls}>URL Slug</label><input value={schFields.slug||""} onChange={e=>setSchFields(p=>({...p,slug:e.target.value}))} style={is} placeholder="/puppies-for-sale/mavi-benny-litter"/></div>
+                  <div><label style={ls}>Description</label><textarea value={schFields.description||""} onChange={e=>setSchFields(p=>({...p,description:e.target.value}))} style={{...is,resize:"vertical",minHeight:50}} placeholder="Litter overview"/></div>
+                  <div><label style={ls}>Dam Name</label><input value={schFields.damName||""} onChange={e=>setSchFields(p=>({...p,damName:e.target.value}))} style={is} placeholder="Mavi"/></div>
+                  <div><label style={ls}>Sire Name</label><input value={schFields.sireName||""} onChange={e=>setSchFields(p=>({...p,sireName:e.target.value}))} style={is} placeholder="Benny"/></div>
+                  <div><label style={ls}>Puppies JSON (name + url per puppy)</label><textarea value={schFields.puppies||""} onChange={e=>setSchFields(p=>({...p,puppies:e.target.value}))} style={{...is,resize:"vertical",minHeight:120,fontFamily:"ui-monospace,SFMono-Regular,monospace",fontSize:11}} placeholder='[{"name":"Emerald","url":"/puppies-for-sale/emerald"}]'/></div>
+                </div>}
+
+                {schType==="breed"&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  <div><label style={ls}>Page Title</label><input value={schFields.title||""} onChange={e=>setSchFields(p=>({...p,title:e.target.value}))} style={is} placeholder="Australian Mountain Doodle - Breed Guide"/></div>
+                  <div><label style={ls}>URL Slug</label><input value={schFields.slug||""} onChange={e=>setSchFields(p=>({...p,slug:e.target.value}))} style={is} placeholder="/australian-mountain-doodle"/></div>
+                  <div><label style={ls}>Breed Name</label><input value={schFields.breedName||""} onChange={e=>setSchFields(p=>({...p,breedName:e.target.value}))} style={is} placeholder="Australian Mountain Doodle"/></div>
+                  <div><label style={ls}>Description</label><textarea value={schFields.description||""} onChange={e=>setSchFields(p=>({...p,description:e.target.value}))} style={{...is,resize:"vertical",minHeight:50}} placeholder="Page meta description"/></div>
+                  <div style={{marginTop:16}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <label style={{...ls,margin:0}}>FAQ Questions</label>
+                      <button onClick={()=>setSchFaqs(p=>[...p,{q:"",a:""}])} style={{background:"none",border:"none",color:C.copper,fontSize:11,cursor:"pointer",fontFamily:F.b,letterSpacing:".05em"}}>+ Add Question</button>
+                    </div>
+                    {schFaqs.map((fq,i)=>(
+                      <div key={i} style={{background:C.creamDark,borderRadius:6,padding:12,marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                          <span style={{fontSize:10,color:C.stone}}>Q{i+1}</span>
+                          {schFaqs.length>1&&<button onClick={()=>setSchFaqs(p=>p.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.danger,fontSize:11,cursor:"pointer"}}>Remove</button>}
+                        </div>
+                        <input value={fq.q} onChange={e=>{const u=[...schFaqs];u[i].q=e.target.value;setSchFaqs(u)}} style={{...is,fontSize:12,marginBottom:6}} placeholder="Question text"/>
+                        <textarea value={fq.a} onChange={e=>{const u=[...schFaqs];u[i].a=e.target.value;setSchFaqs(u)}} style={{...is,fontSize:12,resize:"vertical",minHeight:60}} placeholder="Answer text (600-1200 chars)"/>
+                      </div>
+                    ))}
+                  </div>
+                </div>}
+
+                <Btn onClick={schGenerate} sx={{width:"100%",marginTop:16}}>Generate Schema</Btn>
+              </div>
+
+              {/* Right: Output */}
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".15em",textTransform:"uppercase"}}>Output</div>
+                  {schOutput&&<Btn onClick={schCopy} v={schCopied?"success":"secondary"} sx={{fontSize:10,padding:"6px 14px"}}>{schCopied?"Copied":"Copy to Clipboard"}</Btn>}
+                </div>
+
+                {schOutput?<Card sx={{maxHeight:600,overflowY:"auto"}}>
+                  <pre style={{fontFamily:"ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace",fontSize:12,color:C.ink,lineHeight:1.6,whiteSpace:"pre-wrap",wordBreak:"break-word",margin:0}}>{schOutput}</pre>
+                </Card>:<Card sx={{textAlign:"center",padding:60,background:C.creamDark}}>
+                  <div style={{fontSize:28,marginBottom:12}}>🏗️</div>
+                  <div style={{fontFamily:F.d,fontSize:18,color:C.ink,marginBottom:8}}>Select a page type and fill in the fields</div>
+                  <div style={{fontSize:12,color:C.slate,maxWidth:400,marginInline:"auto",lineHeight:1.6}}>
+                    The generator outputs JSON-LD wrapped in a script tag. Copy and paste into the page's Settings > Advanced > Page Header Code Injection in Squarespace.
+                  </div>
+                </Card>}
+
+                {schOutput&&<div style={{marginTop:16}}>
+                  <Card sx={{background:C.ink,border:"none"}}>
+                    <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".12em",textTransform:"uppercase",marginBottom:10}}>How to Use</div>
+                    <div style={{fontSize:12,color:"rgba(222,211,191,.5)",lineHeight:1.7}}>
+                      <div>1. Copy the output above</div>
+                      <div>2. Open the page in Squarespace editor</div>
+                      <div>3. Go to Page Settings (gear icon) > Advanced</div>
+                      <div>4. Paste into Page Header Code Injection</div>
+                      <div>5. Save and publish</div>
+                      <div>6. Validate at validator.schema.org</div>
+                      <div>7. Test at search.google.com/test/rich-results</div>
+                    </div>
+                  </Card>
+
+                  <Card sx={{marginTop:12}}>
+                    <div style={{fontSize:11,fontWeight:600,color:C.copper,letterSpacing:".12em",textTransform:"uppercase",marginBottom:8}}>Cross-References</div>
+                    <div style={{fontSize:12,color:C.slate,lineHeight:1.7}}>
+                      <div>This schema references these site-wide @id anchors:</div>
+                      <div style={{marginTop:6,fontFamily:"ui-monospace,monospace",fontSize:11,color:C.ink}}>
+                        <div>#website - WebSite entity</div>
+                        <div>#business - LocalBusiness entity</div>
+                        <div>#org - Organization entity</div>
+                        <div>#author - James G. Stokes (Person)</div>
+                      </div>
+                      <div style={{marginTop:8,color:C.stone,fontSize:11}}>These are defined in your site-wide Header Code Injection. Do not duplicate them on individual pages.</div>
+                    </div>
+                  </Card>
+                </div>}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ═══ SETTINGS ═══ */}
         {tab==="settings"&&(
           <div className="fi">
@@ -939,7 +1261,7 @@ export default function ContentEngine(){
 
       <div style={{padding:"14px 32px",borderTop:`1px solid ${C.warmGray}`,display:"flex",justifyContent:"space-between"}}>
         <span style={{fontSize:11,color:C.stone}}>Stokeshire Designer Doodles · DATCP #514401-DS</span>
-        <span style={{fontSize:11,color:C.stone}}>Content Engine v4 · Voice Library · Dual-AI Review · Social Studio · Memory Bank</span>
+        <span style={{fontSize:11,color:C.stone}}>Content Engine v5 · Voice Library · Dual-AI Review · Social Studio · Schema Generator · Memory Bank</span>
       </div>
       <div style={{position:"fixed",bottom:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${C.copper},${C.copperLight},${C.copper})`,zIndex:999}}/>
     </div>
