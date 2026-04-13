@@ -38,7 +38,8 @@ export default async function handler(req, res) {
       : blog_title;
 
     // Step 4: Post to Pinterest API v5
-    const pinResponse = await fetch('https://api.pinterest.com/v5/pins', {
+    const apiBase = process.env.PINTEREST_API_BASE || 'https://api.pinterest.com';
+    const pinResponse = await fetch(`${apiBase}/v5/pins`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
