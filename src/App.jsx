@@ -469,9 +469,9 @@ export default function ContentEngine(){
     if(!url?.trim())return;
     setSocLoading(true);setSocStatus("Fetching blog...");
     try{
-      const res=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url.trim())}`);
-      if(!res.ok)throw new Error("Could not fetch URL");
-      const html=await res.text();
+      const res=await fetch("/api/fetch-blog",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url.trim()})});
+      if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||"Could not fetch URL")}
+      const{html}=await res.json();
       const doc=new DOMParser().parseFromString(html,"text/html");
       const title=doc.querySelector("h1")?.textContent?.trim()||doc.querySelector("title")?.textContent?.trim()||"Untitled";
       const entry=doc.querySelector(".blog-item-content,.entry-content,article,.sqs-block-content");
