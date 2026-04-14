@@ -171,15 +171,25 @@ function SocStatCard({number,label,context}){
   </div>
 }
 function SocCarouselText({slideNumber,totalSlides,headline,body,footer}){
-  return <div style={{width:1080,height:1350,background:"linear-gradient(175deg,#1C1C1C 0%,#2A2118 100%)",display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"72px 80px",position:"relative"}}>
+  return <div style={{width:1080,height:1350,background:"linear-gradient(175deg,#1C1C1C 0%,#2A2118 100%)",display:"flex",flexDirection:"column",padding:"80px 80px 72px",position:"relative",overflow:"hidden"}}>
     <div style={brandOverlay}/>
-    <div style={{position:"relative",zIndex:2}}><div style={{fontFamily:F.b,fontWeight:300,fontSize:13,letterSpacing:".3em",color:"rgba(222,211,191,0.2)"}}>{slideNumber} / {totalSlides}</div></div>
-    <div style={{position:"relative",zIndex:2}}>
-      <h2 style={{fontFamily:F.d,fontSize:48,fontWeight:300,lineHeight:1.2,color:"#EDE5D8",margin:"0 0 28px"}}>{headline}</h2>
-      <div style={{...copperLine(48),margin:"0 0 28px"}}/>
-      <p style={{fontFamily:F.b,fontWeight:300,fontSize:19,lineHeight:1.8,color:"rgba(222,211,191,0.5)",margin:0,maxWidth:800}}>{body}</p>
+    {/* Large faint slide number fills dead upper-right space */}
+    <div style={{position:"absolute",right:-10,top:-30,fontFamily:F.d,fontSize:520,fontWeight:700,lineHeight:1,color:"rgba(173,122,40,0.045)",zIndex:1,userSelect:"none",pointerEvents:"none",letterSpacing:"-.02em"}}>{slideNumber}</div>
+    {/* Subtle radial accent */}
+    <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 20% 60%, rgba(173,122,40,0.06) 0%, transparent 55%)",zIndex:1}}/>
+    {/* Top counter with copper tick */}
+    <div style={{position:"relative",zIndex:2,display:"flex",alignItems:"center",gap:14,marginBottom:0}}>
+      <div style={{width:28,height:1,background:"rgba(173,122,40,0.5)"}}/>
+      <div style={{fontFamily:F.b,fontWeight:300,fontSize:12,letterSpacing:".38em",color:"rgba(222,211,191,0.3)"}}>{String(slideNumber).padStart(2,"0")} / {String(totalSlides).padStart(2,"0")}</div>
     </div>
-    <div style={{position:"relative",zIndex:2,fontFamily:F.b,fontWeight:300,fontSize:13,letterSpacing:".3em",textTransform:"uppercase",color:"rgba(222,211,191,0.2)"}}>{footer||"Stokeshire Designer Doodles"}</div>
+    {/* Content — vertically centered in remaining space */}
+    <div style={{position:"relative",zIndex:2,flex:1,display:"flex",flexDirection:"column",justifyContent:"center",paddingBottom:20}}>
+      <h2 style={{fontFamily:F.d,fontSize:68,fontWeight:300,lineHeight:1.1,color:"#EDE5D8",margin:"0 0 40px"}}>{headline}</h2>
+      <div style={{width:52,height:1.5,background:"linear-gradient(90deg,#AD7A28,rgba(173,122,40,0.15))",margin:"0 0 40px"}}/>
+      <p style={{fontFamily:F.b,fontWeight:300,fontSize:22,lineHeight:1.85,color:"rgba(222,211,191,0.55)",margin:0,maxWidth:880}}>{body}</p>
+    </div>
+    {/* Footer */}
+    <div style={{position:"relative",zIndex:2,fontFamily:F.b,fontWeight:300,fontSize:11,letterSpacing:".38em",textTransform:"uppercase",color:"rgba(222,211,191,0.18)"}}>{footer||"Stokeshire Designer Doodles"}</div>
   </div>
 }
 function SocCtaCard({headline,subtitle,ctaText,url}){
